@@ -3,10 +3,10 @@ name: tech-tower-workflow
 description: 技术塔六步工程流水线（intake→brainstorm→plan→build→review→pr）。当用户说「用技术塔工作流处理」「走技术塔流程」，或需要把一句话需求做成从分析到交付的完整工程闭环时使用。内置浏览器视觉伴侣（brainstorm 视觉决策）、git 建仓引导（build 前置）、测试用例与 test_generator MCP 集成（plan/build）、运行时回归纪律（review）。人格经 SOUL.md 注入（小塔/阿塔）；用户呼唤「小塔、阿塔，分析一下xxx，给我出个技术方案」同样触发。
 metadata:
   short-description: 技术塔六步流水线：视觉伴侣+建仓引导+测试集成
-  version: 1.5.0
+  version: 1.5.1
 ---
 
-# 技术塔工作流 v1.5.0
+# 技术塔工作流 v1.5.1
 
 六步流水线：intake → brainstorm → plan → build → review → pr。
 拓扑定义：`references/tech-tower-workflow.yaml`；端到端示例：`references/demo.md`。
@@ -47,6 +47,7 @@ visual-companion/smoke-test.sh   # 一键冒烟，无需人工交互
 
 ## 版本历史
 
+- **v1.5.1**（2026-08-11）：installer Agent 检测改为项目目录/全局目录/CLI 三层，任一命中默认选中；未检测到时不视为错误。
 - **v1.5.0**（2026-08-11）：installer 重写为分发模式（环境自检测→Codex/Claude Code 多选/项目全局确认→GitHub 压缩包解压安装→清理），不上报统计；安装包自包含可整目录拷贝，Codex 安装目录排除 claude-plugin 以避免重复 skill 扫描。
 - **v1.4.0**（2026-08-11）：新增 `installer/SKILL.md` AI 自动安装 skill（GitHub 克隆→按平台安装→验证→清理），README 提供一句话触发入口。
 - **v1.3.0**（2026-08-11）：新增 Windows 安装入口 `install.ps1`（robocopy /MIR 等价 rsync --delete）；运行时脚本保持 Git Bash/MSYS 自动适配。

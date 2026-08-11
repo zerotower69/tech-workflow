@@ -3,7 +3,7 @@ name: tech-tower-installer
 description: 从 GitHub 自动化安装 tech-tower-workflow（技术塔工作流）技能包，支持 Codex 与 Claude Code 两大 Agent，项目/全局两种范围。当用户说「安装技术塔工作流」「装一下 tech-tower」「install tech-tower-workflow」时触发。
 metadata:
   short-description: 从 GitHub 一键自动安装技术塔工作流（Codex / Claude Code）
-  version: 1.5.0
+  version: 1.5.1
 ---
 
 # 技术塔工作流 · AI 自动安装
@@ -19,7 +19,11 @@ skill-name：`tech-tower-workflow`
 - 操作系统（Windows/macOS/Linux）
 - 可用下载工具（curl/wget/Invoke-WebRequest）
 - 可用解压工具（tar/unzip/Expand-Archive）；macOS/Linux 优先 tar.gz+tar，Windows 优先 zip+Expand-Archive
-- 检测项目中已使用的 Agent：检查当前项目目录下是否存在 `.codex/`、`.claude/`，存在则默认选中
+- 检测已使用的 Agent（三层任一命中即视为在用，默认选中）：
+  - 项目层：当前项目目录下 `.codex/`、`.claude/`
+  - 全局层：`$CODEX_HOME`/`~/.codex`、`~/.claude` 目录
+  - CLI 层：`command -v codex`、`command -v claude`
+- 均未检测到时不视为错误：Q1 列出两个选项由用户手动选择
 
 ## 2. 确认安装位置（需询问用户）
 

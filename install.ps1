@@ -18,4 +18,4 @@ if ($LASTEXITCODE -ge 8) {
     throw "robocopy failed with exit code $LASTEXITCODE"
 }
 
-Write-Output "installed: $dest (v1.5.0)"
+Write-Output "installed: $dest (v1.5.1)"

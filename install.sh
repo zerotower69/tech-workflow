@@ -6,4 +6,4 @@ DEST="${CODEX_HOME:-$HOME/.codex}/skills/tech-tower-workflow"
 mkdir -p "$DEST"
 rsync -a --delete --delete-excluded --exclude '.git' --exclude 'node_modules' \
   --exclude '/claude-plugin' --exclude '/.claude-plugin' "$SRC/" "$DEST/"
-echo "installed: $DEST (v1.5.0)"
+echo "installed: $DEST (v1.5.1)"
