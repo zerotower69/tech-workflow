@@ -3,7 +3,7 @@ name: tech-tower-installer
 description: 从 GitHub 自动化安装 tech-tower-workflow（技术塔工作流）技能包，支持 Codex 与 Claude Code 两大 Agent，项目/全局两种范围。当用户说「安装技术塔工作流」「装一下 tech-tower」「install tech-tower-workflow」时触发。
 metadata:
   short-description: 从 GitHub 一键自动安装技术塔工作流（Codex / Claude Code）
-  version: 1.8.0
+  version: 1.9.0
 ---
 
 # 技术塔工作流 · AI 自动安装
@@ -51,16 +51,16 @@ skill-name：`tech-tower-workflow`
 为每个选中的 Agent 执行：
 1. 下载压缩包到临时目录（网络失败重试一次）。
 2. 解压；GitHub 包顶层目录为 `tech-tower-workflow-main` 或 `tech-tower-workflow-<tag>`。
-3. Codex 全局：直接在解压目录执行随包 `./install.sh`（Windows 用 `install.ps1`）——脚本自带覆盖与排除逻辑，不要自拼删除命令。
-4. 其他目标（Claude 全局/项目目录）：用覆盖同步（`rsync -a --delete` / `robocopy /MIR` / `cp -R`）放入 `<目标目录>/tech-tower-workflow/`；不要 `rm -rf` 旧目录；目标目录不存在先创建。
-5. Codex 目标排除 `claude-plugin/`、`.claude-plugin/`（install.sh/install.ps1 已内置，手动复制同样加排除）；Claude 目标整目录保留（自包含全部材料与脚本）。
+3. Codex 全局：直接在解压目录执行随包 `./install.sh`（Windows 用 `install.ps1`）——脚本自动遍历 `skills/` 逐个 skill 镜像覆盖安装，不要自拼删除命令。
+4. 其他目标（Claude 全局/项目目录）：遍历解压目录 `skills/` 下每个含 `SKILL.md` 的子目录，用覆盖同步（`rsync -a --delete` / `robocopy /MIR` / `cp -R`）放入 `<目标 skills 目录>/<skill-name>/`（如 `.claude/skills/tech-tower-workflow/`、`.claude/skills/tech-tower-installer/`）；不要 `rm -rf` 旧目录；目标目录不存在先创建。
+5. 只复制 `skills/` 内的内容；解压目录根部的 `claude-plugin/`、`plugin-src/`、`bin/` 等工程产物不要拷入 skills 目录。
 6. 全部完成后清理临时文件。
 
 可选增强：若选中 Claude Code 且用户需要「禁止自动 git push」hook，再执行 `claude plugin install <解压目录>/claude-plugin`（仅问一句是否安装）。
 
 ## 4. 验证与汇报
 
-- 检查每个安装目录存在 `SKILL.md`，读取 frontmatter `version` 汇报。
+- 检查每个已安装 skill 目录存在 `SKILL.md`（`skills/` 下有几个装几个），读取 frontmatter `version` 汇报。
 - 告知触发方式：「用技术塔工作流处理：<需求>」或「小塔/阿塔，分析一下xxx，给我出个技术方案」。
 
 ## 纪律

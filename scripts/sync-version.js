@@ -38,11 +38,13 @@ function apply(path, transform, label) {
   if (!existsSync(file)) fail(`文件不存在: ${path}`);
   const before = readFileSync(file, 'utf8');
   const after = transform(before, path);
-  if (after === before) fail(`${path}: 无可替换位点（${label}）`);
-  if (after !== before) {
-    writeFileSync(file, after);
-    changed.push(`${path}（${label}）`);
+  // 位点存在但已是目标版本 → 幂等跳过（脚本可重复运行做校验）
+  if (after === before) {
+    changed.push(`${path}（${label}，已是 v${version}）`);
+    return;
   }
+  writeFileSync(file, after);
+  changed.push(`${path}（${label}）`);
 }
 
 // SKILL.md frontmatter：只处理首个 --- ... --- 块，避免误伤正文
@@ -61,14 +63,14 @@ function replaceFrontmatterVersion(content, file) {
 const jsonVersionRe = /("version"\s*:\s*")[^"]+(")/;
 const installEchoRe = /(\(v)\d+\.\d+\.\d+(\))/;
 
-// 1. SKILL.md：frontmatter version + 标题版本
-apply('SKILL.md', (c, f) => {
+// 1. skills/tech-tower-workflow/SKILL.md：frontmatter version + 标题版本
+apply('skills/tech-tower-workflow/SKILL.md', (c, f) => {
   c = replaceFrontmatterVersion(c, f);
   return replaceOnce(c, /^# 技术塔工作流 v.+$/m, `# 技术塔工作流 v${version}`, f, '标题版本');
 }, 'frontmatter+标题');
 
-// 2. installer/SKILL.md：frontmatter version
-apply('installer/SKILL.md', (c, f) => replaceFrontmatterVersion(c, f), 'frontmatter');
+// 2. skills/tech-tower-installer/SKILL.md：frontmatter version
+apply('skills/tech-tower-installer/SKILL.md', (c, f) => replaceFrontmatterVersion(c, f), 'frontmatter');
 
 // 3. README.md：「当前版本」行
 apply('README.md', (c, f) =>
