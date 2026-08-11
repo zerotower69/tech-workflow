@@ -3,10 +3,10 @@ name: tech-tower-workflow
 description: 技术塔六步工程流水线（intake→brainstorm→plan→build→review→pr）。当用户说「用技术塔工作流处理」「走技术塔流程」，或需要把一句话需求做成从分析到交付的完整工程闭环时使用。内置浏览器视觉伴侣（brainstorm 视觉决策）、git 建仓引导（build 前置）、测试用例与 test_generator MCP 集成（plan/build）、运行时回归纪律（review）。人格经 SOUL.md 注入（小塔/阿塔）；用户呼唤「小塔、阿塔，分析一下xxx，给我出个技术方案」同样触发。
 metadata:
   short-description: 技术塔六步流水线：视觉伴侣+建仓引导+测试集成
-  version: 1.2.0
+  version: 1.3.0
 ---
 
-# 技术塔工作流 v1.2.0
+# 技术塔工作流 v1.3.0
 
 六步流水线：intake → brainstorm → plan → build → review → pr。
 拓扑定义：`references/tech-tower-workflow.yaml`；端到端示例：`references/demo.md`。
@@ -47,6 +47,7 @@ visual-companion/smoke-test.sh   # 一键冒烟，无需人工交互
 
 ## 版本历史
 
+- **v1.3.0**（2026-08-11）：新增 Windows 安装入口 `install.ps1`（robocopy /MIR 等价 rsync --delete）；运行时脚本保持 Git Bash/MSYS 自动适配。
 - **v1.2.0**（2026-08-11）：产品改名技术塔，清除全部旧命名表述；SOUL.md 人格注入，小塔/阿塔触发。
 - **v1.1.0**（2026-08-11）：封装 Claude Code 插件（`claude-plugin/`），新增 PreToolUse hook 禁止自动 git push（仅用户显式要求时放行）。
 - **v1.0.0**（2026-08-11）：首次 skill 封装。含视觉伴侣集成、git 建仓引导、`.repository` 容器约定、测试用例+MCP 集成、运行时回归纪律。

@@ -56,11 +56,17 @@ flowchart LR
 
 ## 作为 Codex Skill 使用
 
-本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.2.0**：
+本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.3.0**：
 
 ```bash
-./install.sh   # 安装到 $CODEX_HOME/skills/tech-tower-workflow
+./install.sh   # macOS / Linux / Git Bash：安装到 $CODEX_HOME/skills/tech-tower-workflow
 ```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File install.ps1   # Windows：等价安装
+```
+
+Windows 说明：安装用 `install.ps1`；视觉伴侣等运行时脚本在 Git Bash/MSYS 下已自动适配，纯 PowerShell 环境可直接 `node visual-companion/scripts/server.cjs` 前台启动。
 
 安装后对 Agent 说「用技术塔工作流处理：<需求>」即可触发；版本与变更见 `SKILL.md` 版本历史，git tag 同步打 `v1.0.0`。
 
