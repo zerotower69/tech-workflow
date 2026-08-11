@@ -1,6 +1,6 @@
 {
   "name": "tech-workflow",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "技术塔六步工程流水线（intake→brainstorm→plan→build→review→pr）：视觉伴侣、git 建仓引导、测试用例集成、禁止自动 push hook",
   "author": { "name": "zerotower" },
   "license": "MIT",

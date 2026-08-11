@@ -194,8 +194,17 @@ location.replace('/');
 </html>`;
 }
 
-const frameTemplate = fs.readFileSync(path.join(__dirname, 'frame-template.html'), 'utf-8');
-const helperScript = fs.readFileSync(path.join(__dirname, 'helper.js'), 'utf-8');
+// 优先读会话目录内的模板/脚本副本（start-server.sh 启动时已复制，工程内自包含），
+// 缺失时回退 skill 自带版本（如直接 node server.cjs 手工启动）
+function loadSessionAsset(name) {
+  try {
+    const sessionCopy = path.join(SESSION_DIR, name);
+    if (fs.existsSync(sessionCopy)) return fs.readFileSync(sessionCopy, 'utf-8');
+  } catch (e) { /* fall through */ }
+  return fs.readFileSync(path.join(__dirname, name), 'utf-8');
+}
+const frameTemplate = loadSessionAsset('frame-template.html');
+const helperScript = loadSessionAsset('helper.js');
 const helperInjection = '<script>\n' + helperScript + '\n</script>';
 
 // ========== Helper Functions ==========

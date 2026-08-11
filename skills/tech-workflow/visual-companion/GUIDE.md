@@ -294,8 +294,9 @@ If the session used `--project-dir`, mockup files persist in `.tech-tower/brains
 
 ## Reference
 
-- Frame template (CSS reference): `scripts/frame-template.html`
-- Helper script (client-side): `scripts/helper.js`
+- Frame template (CSS reference): [scripts/frame-template.html](scripts/frame-template.html)
+- Helper script (client-side): [scripts/helper.js](scripts/helper.js)
+- Session self-containment: every session start copies both files into the session directory (project sessions: `<project>/.tech-tower/brainstorm/<session-id>/`); the server reads the session copies first. Specs/records in the project SHOULD link `<session-dir>/frame-template.html` for later review.
 
 ## Snapshot Region Convention
 

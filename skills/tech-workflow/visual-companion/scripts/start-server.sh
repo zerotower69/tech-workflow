@@ -131,6 +131,10 @@ SERVER_ID_FILE="${STATE_DIR}/server-instance-id"
 # Create fresh session directory with content and state peers
 mkdir -p "${SESSION_DIR}/content" "$STATE_DIR"
 
+# 会话自包含：页面框架模板与客户端脚本在会话目录持有一份副本
+# （项目会话持久化在 <project>/.tech-tower/brainstorm/<id>/，可离线回看、随工程归档）
+cp -f "$SCRIPT_DIR/frame-template.html" "$SCRIPT_DIR/helper.js" "$SESSION_DIR/" 2>/dev/null || true
+
 SERVER_ID=""
 if [[ -r /dev/urandom ]]; then
   SERVER_ID="$(od -An -N24 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || true)"

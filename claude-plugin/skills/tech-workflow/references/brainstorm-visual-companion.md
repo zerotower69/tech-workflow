@@ -42,6 +42,7 @@ visual-companion/scripts/start-server.sh --project-dir <workspace 根目录>
 - 提醒将 `.tech-tower/` 加入 `.gitignore`（如尚未添加）。
 - 运行时差异：后台进程会被回收的环境改用 `--foreground` + 平台后台执行机制；远程/容器环境浏览器无法访问回环地址时用 `--host 0.0.0.0 --url-host localhost`。
 - 错过 stdout 时读取 `$SCREEN_DIR/.server-info` 获取 URL 与端口。
+- 每次启动会把页面框架模板与客户端脚本复制进会话目录（[frame-template.html](../visual-companion/scripts/frame-template.html)、[helper.js](../visual-companion/scripts/helper.js) 的副本），服务器优先读会话内副本，项目会话因此自包含、可离线回看。
 
 ### 逐问题决策：浏览器还是终端
 
@@ -69,6 +70,7 @@ visual-companion/scripts/stop-server.sh "$SCREEN_DIR"
 ```
 
 - `--project-dir` 会话的原型保留在 `.tech-tower/brainstorm/` 供日后参考；`/tmp` 会话停止时删除。
+- `spec.md` 中记录会话目录，并链接原型页面副本：`[原型页面](<workspace>/.tech-tower/brainstorm/<session-id>/frame-template.html)`（用项目内相对路径），便于日后在工程中直接回看。
 - 确认 `.scratch/<slug>/spec.md` 已写入并获用户批准，方可上报步骤完成。
 - 若用户同意原型快照，先完成快照（见第九节）再 stop-server。
 
