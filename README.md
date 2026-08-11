@@ -56,7 +56,7 @@ flowchart LR
 
 ## 作为 Codex Skill 使用
 
-本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.5.1**：
+本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.5.2**：
 
 ### AI 自动安装（推荐）
 
