@@ -3,10 +3,10 @@ name: tech-tower-workflow
 description: 技术塔六步工程流水线（intake→brainstorm→plan→build→review→pr）。当用户说「用技术塔工作流处理」「走技术塔流程」，或需要把一句话需求做成从分析到交付的完整工程闭环时使用。内置浏览器视觉伴侣（brainstorm 视觉决策）、git 建仓引导（build 前置）、测试用例与 test_generator MCP 集成（plan/build）、运行时回归纪律（review）。人格经 SOUL.md 注入（小塔/阿塔）；用户呼唤「小塔、阿塔，分析一下xxx，给我出个技术方案」同样触发。
 metadata:
   short-description: 技术塔六步流水线：视觉伴侣+建仓引导+测试集成
-  version: 1.6.0
+  version: 1.7.0
 ---
 
-# 技术塔工作流 v1.6.0
+# 技术塔工作流 v1.7.0
 
 六步流水线：intake → brainstorm → plan → build → review → pr。
 拓扑定义：`workflow/tech-tower-workflow.yaml`；端到端示例：`demo.md`。
@@ -19,6 +19,11 @@ metadata:
 - 验证分层：静态校验 ≠ 运行时证明；未真实执行的验证单独声明。
 - 产物约定：工作流产物在 `.scratch/<slug>/`；代码仓库在 `.repository/` 容器目录（可容纳多个 git 仓库，自身不是仓库）。
 - 全程中文交流（强制）：解释、汇报、提问一律中文，未经用户明确指定不切换其他语言。
+
+## 更新检查（每天首次启动）
+
+- skill 触发时先跑 `scripts/check-update.cjs`（当天已查自动跳过；失败静默放行，不阻塞原请求）。
+- `updateAvailable=true` 时一句话告知本地版本/远端最新 tag，问是否更新：同意则按 `installer/SKILL.md` 完成更新后继续原请求；拒绝则直接继续原请求。
 
 ## 各步骤要点与手册
 
@@ -48,6 +53,7 @@ visual-companion/smoke-test.sh   # 一键冒烟，无需人工交互
 
 ## 版本历史
 
+- **v1.7.0**（2026-08-11）：新增 `scripts/check-update.cjs` 每日首次启动更新检查（GitHub tag 对比，提示用户选择是否更新，不阻塞）。
 - **v1.6.0**（2026-08-11）：新增原型快照：`snapshot-prototype.cjs` 只截 `data-tt-screen` 区域，brainstorm 收尾前征得同意（披露 token 估算与存放路径）后执行。
 - **v1.5.2**（2026-08-11）：installer 纪律增强：不打印完整命令、禁 rm -rf 旧目录，Codex 全局直接执行随包安装脚本；全程中文交流（强制）。
 - **v1.5.1**（2026-08-11）：installer Agent 检测改为项目目录/全局目录/CLI 三层，任一命中默认选中；未检测到时不视为错误。
