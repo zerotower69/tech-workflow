@@ -3,10 +3,10 @@ name: tech-tower-workflow
 description: 技术塔六步工程流水线（intake→brainstorm→plan→build→review→pr）。当用户说「用技术塔工作流处理」「走技术塔流程」，或需要把一句话需求做成从分析到交付的完整工程闭环时使用。内置浏览器视觉伴侣（brainstorm 视觉决策）、git 建仓引导（build 前置）、测试用例与 test_generator MCP 集成（plan/build）、运行时回归纪律（review）。人格经 SOUL.md 注入（小塔/阿塔）；用户呼唤「小塔、阿塔，分析一下xxx，给我出个技术方案」同样触发。
 metadata:
   short-description: 技术塔六步流水线：视觉伴侣+建仓引导+测试集成
-  version: 1.5.2
+  version: 1.6.0
 ---
 
-# 技术塔工作流 v1.5.2
+# 技术塔工作流 v1.6.0
 
 六步流水线：intake → brainstorm → plan → build → review → pr。
 拓扑定义：`references/tech-tower-workflow.yaml`；端到端示例：`references/demo.md`。
@@ -25,7 +25,7 @@ metadata:
 | 步骤 | 要点 | 手册 |
 |---|---|---|
 | intake | 结合领域文档拷问工单，弄清问题/影响范围/上下文 | — |
-| brainstorm | 视觉问题征求同意后启用视觉伴侣；收敛为 spec 并获批 | `references/brainstorm-visual-companion.md` |
+| brainstorm | 视觉问题征求同意后启用视觉伴侣；收敛为 spec 并获批；原型快照需同意（告知消耗与路径） | `references/brainstorm-visual-companion.md` |
 | plan | 拆 Tickets **同时**产出 test-cases.md（unit/integration/manual） | `references/plan-test-cases.md` |
 | build | 先 git 环境检查与引导建仓，首次提交后才动代码；逐 ticket 实施 | `references/build-git-bootstrap.md` |
 | review | 独立审查 + 核对 manual 用例真实执行；运行时专属问题清单逐条回归 | `references/plan-test-cases.md` 附录 |
@@ -48,6 +48,7 @@ visual-companion/smoke-test.sh   # 一键冒烟，无需人工交互
 
 ## 版本历史
 
+- **v1.6.0**（2026-08-11）：新增原型快照：`snapshot-prototype.cjs` 只截 `data-tt-screen` 区域，brainstorm 收尾前征得同意（披露 token 估算与存放路径）后执行。
 - **v1.5.2**（2026-08-11）：installer 纪律增强：不打印完整命令、禁 rm -rf 旧目录，Codex 全局直接执行随包安装脚本；全程中文交流（强制）。
 - **v1.5.1**（2026-08-11）：installer Agent 检测改为项目目录/全局目录/CLI 三层，任一命中默认选中；未检测到时不视为错误。
 - **v1.5.0**（2026-08-11）：installer 重写为分发模式（环境自检测→Codex/Claude Code 多选/项目全局确认→GitHub 压缩包解压安装→清理），不上报统计；安装包自包含可整目录拷贝，Codex 安装目录排除 claude-plugin 以避免重复 skill 扫描。

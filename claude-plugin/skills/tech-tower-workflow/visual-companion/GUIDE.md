@@ -296,3 +296,8 @@ If the session used `--project-dir`, mockup files persist in `.tech-tower/brains
 
 - Frame template (CSS reference): `scripts/frame-template.html`
 - Helper script (client-side): `scripts/helper.js`
+
+## Snapshot Region Convention
+
+- App-page mockups MUST wrap the page region in `<div data-tt-screen>…</div>`: `scripts/snapshot-prototype.cjs` and browser-MCP element screenshots crop by it, falling back to `#frame-content` when absent.
+- Keep only the app page itself inside the region (no outer background or explanatory text) so snapshots serve as clean visual references.

@@ -52,11 +52,13 @@ flowchart LR
 4. 逐问题决策浏览器还是终端，标准：**用户看到它是否比读到它更容易理解**。
 5. 退出 brainstorm 前执行 `visual-companion/scripts/stop-server.sh "$SCREEN_DIR"`，原型保留在 `.tech-tower/brainstorm/`。
 
+收尾前可选截取原型快照（须征得同意，告知 token 估算与存放路径），只截 `data-tt-screen` app 页面区域。
+
 详见 `docs/brainstorm-visual-companion.md` 与 `visual-companion/GUIDE.md`。
 
 ## 作为 Codex Skill 使用
 
-本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.5.2**：
+本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.6.0**：
 
 ### AI 自动安装（推荐）
 

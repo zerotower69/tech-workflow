@@ -70,6 +70,7 @@ visual-companion/scripts/stop-server.sh "$SCREEN_DIR"
 
 - `--project-dir` 会话的原型保留在 `.tech-tower/brainstorm/` 供日后参考；`/tmp` 会话停止时删除。
 - 确认 `.scratch/<slug>/spec.md` 已写入并获用户批准，方可上报步骤完成。
+- 若用户同意原型快照，先完成快照（见第九节）再 stop-server。
 
 ## 六、HARD-GATE（沿袭头脑风暴设计）
 
@@ -93,7 +94,10 @@ flowchart TD
     I --> J{"用户批准?"}
     J -- "修改" --> E
     J -- "批准" --> K["写入 .scratch/<slug>/spec.md"]
-    K --> L["stop-server.sh 清理"]
+    K --> K2{"同意快照?"}
+    K2 -- "是" --> K3["snapshot-prototype.cjs 截 data-tt-screen"]
+    K2 -- "否" --> L["stop-server.sh 清理"]
+    K3 --> L
     L --> M["推进 plan"]
 ```
 
@@ -104,3 +108,19 @@ flowchart TD
 3. **产物校验**：声称产出 spec 的步骤需校验 `.scratch/<slug>/spec.md` 真实存在（findings 的 P0 建议）。
 4. **成本披露**：提议模板已声明「可能消耗较多 token」，必须经用户同意才启用。
 5. **展示标签**：原 findings 指出「头脑风暴」标签与 `to-spec` 产物语义不一致；本次增强强化了 brainstorm 语义。若后续改名对齐，标签与本指令需同步调整。
+
+## 九、原型快照（可选 · 必须征得同意）
+
+时机：spec 获批后、stop-server 之前。征求同意须独立消息，包含三要素：
+- **范围**：只截 app 页面区域——`[data-tt-screen]` 元素（缺失回退 `#frame-content`），不截整页；
+- **预计消耗**：截图本身为无头浏览器行为，≈0 tokens；后续读回上下文约 `ceil(w×h/750)` tokens/张（390×844 ≈ 440 tokens）；
+- **存放路径**：`.scratch/<slug>/mockups/snapshot-<序号>.png`。
+
+同意后执行（或浏览器 MCP 如 playwriter 做等价 element 截图）：
+
+```bash
+node visual-companion/scripts/snapshot-prototype.cjs --url <原型URL> --out <存放路径>
+```
+
+mockup 生成约定：app 页面区域一律用 `<div data-tt-screen>…</div>` 包裹（见 `visual-companion/GUIDE.md`）。
+快照用途：plan/build 列为视觉参考；review 与运行时实机表现逐条对照。
