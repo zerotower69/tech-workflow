@@ -23,7 +23,7 @@ metadata:
 ## 更新检查（每天首次启动）
 
 - skill 触发时先跑 `scripts/check-update.cjs`（当天已查自动跳过；失败静默放行，不阻塞原请求）。
-- `updateAvailable=true` 时一句话告知本地版本/远端最新 tag，问是否更新：同意则按 `tech-tower-installer` skill（安装后为兄弟目录 `../tech-tower-installer/SKILL.md`）完成更新后继续原请求；拒绝则直接继续原请求。
+- `updateAvailable=true` 时一句话告知本地版本/远端最新 tag，问是否更新：同意则按 `tech-tower-installer` 安装规程（https://raw.githubusercontent.com/zerotower69/tech-tower-workflow/main/installer/SKILL.md）完成更新后继续原请求；拒绝则直接继续原请求。
 
 ## 各步骤要点与手册
 
@@ -53,7 +53,7 @@ visual-companion/smoke-test.sh   # 一键冒烟，无需人工交互
 
 ## 版本历史
 
-- **v1.9.0**（2026-08-11）：**结构升级为多 skill 包** —— skill 移入 `skills/<skill-name>/`（tech-tower-workflow + tech-tower-installer），为后续新增 skill 预留扩展位；bin 安装器与 install.sh/install.ps1 改为遍历 `skills/` 逐个镜像安装；pack/sync-version/README 路径同步更新。安装目标路径不变，触发方式不变。
+- **v1.9.0**（2026-08-11）：**结构升级为多 skill 包** —— skill 移入 `skills/<skill-name>/`（当前仅 tech-tower-workflow），为后续新增 skill 预留扩展位；`installer/SKILL.md` 保持为安装引导规程，不进 `skills/`、不随安装落盘；bin 安装器与 install.sh/install.ps1 改为遍历 `skills/` 逐个镜像安装；pack/sync-version/README 路径同步更新。安装目标路径不变，触发方式不变。
 - **v1.8.0**（2026-08-11）：npm 工程化 —— 新增 `npx tech-tower-workflow` 一键安装器（`bin/tech-tower-workflow.js`：项目/全局范围、--tool/--uninstall、镜像覆盖、`~` 下安装护栏）；新增 `.version-bump.json` + `scripts/sync-version.js` 版本位点自动同步（npm version 钩子）；install.sh/install.ps1 收紧排除清单（排除 `plugin-src/`、`archive/`、`bin/`、`package.json` 等工程产物）；README 安装文档重构为三方式并列。
 - **v1.7.0**（2026-08-11）：新增 `scripts/check-update.cjs` 每日首次启动更新检查（GitHub tag 对比，提示用户选择是否更新，不阻塞）。
 - **v1.6.0**（2026-08-11）：新增原型快照：`snapshot-prototype.cjs` 只截 `data-tt-screen` 区域，brainstorm 收尾前征得同意（披露 token 估算与存放路径）后执行。

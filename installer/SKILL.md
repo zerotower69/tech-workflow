@@ -52,7 +52,7 @@ skill-name：`tech-tower-workflow`
 1. 下载压缩包到临时目录（网络失败重试一次）。
 2. 解压；GitHub 包顶层目录为 `tech-tower-workflow-main` 或 `tech-tower-workflow-<tag>`。
 3. Codex 全局：直接在解压目录执行随包 `./install.sh`（Windows 用 `install.ps1`）——脚本自动遍历 `skills/` 逐个 skill 镜像覆盖安装，不要自拼删除命令。
-4. 其他目标（Claude 全局/项目目录）：遍历解压目录 `skills/` 下每个含 `SKILL.md` 的子目录，用覆盖同步（`rsync -a --delete` / `robocopy /MIR` / `cp -R`）放入 `<目标 skills 目录>/<skill-name>/`（如 `.claude/skills/tech-tower-workflow/`、`.claude/skills/tech-tower-installer/`）；不要 `rm -rf` 旧目录；目标目录不存在先创建。
+4. 其他目标（Claude 全局/项目目录）：遍历解压目录 `skills/` 下每个含 `SKILL.md` 的子目录，用覆盖同步（`rsync -a --delete` / `robocopy /MIR` / `cp -R`）放入 `<目标 skills 目录>/<skill-name>/`（如 `.claude/skills/tech-tower-workflow/`）；不要 `rm -rf` 旧目录；目标目录不存在先创建。
 5. 只复制 `skills/` 内的内容；解压目录根部的 `claude-plugin/`、`plugin-src/`、`bin/` 等工程产物不要拷入 skills 目录。
 6. 全部完成后清理临时文件。
 

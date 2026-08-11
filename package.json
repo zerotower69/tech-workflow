@@ -10,11 +10,12 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "version": "node scripts/sync-version.js && git add skills/tech-tower-workflow/SKILL.md skills/tech-tower-installer/SKILL.md README.md plugin-src/plugin.json .claude-plugin/marketplace.json install.sh install.ps1"
+    "version": "node scripts/sync-version.js && git add skills/tech-tower-workflow/SKILL.md installer/SKILL.md README.md plugin-src/plugin.json .claude-plugin/marketplace.json install.sh install.ps1"
   },
   "files": [
     "bin/",
     "skills/",
+    "installer/",
     "scripts/",
     "claude-plugin/",
     "install.sh",

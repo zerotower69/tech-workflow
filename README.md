@@ -34,7 +34,8 @@ flowchart LR
 | Skill | 位置 | 说明 |
 |---|---|---|
 | `tech-tower-workflow` | `skills/tech-tower-workflow/SKILL.md` | 主 skill：六步工程流水线 intake→brainstorm→plan→build→review→pr，内置视觉伴侣、git 建仓引导、测试用例集成、运行时回归纪律与每日更新检查 |
-| `tech-tower-installer` | `skills/tech-tower-installer/SKILL.md` | AI 自动安装 skill：环境自检测、确认 Agent 与安装范围、从 GitHub 下载安装、验证并清理 |
+
+`installer/SKILL.md`（`tech-tower-installer`）是**安装引导规程**：供 AI 按需拉取执行安装，不放在 `skills/` 下、不会被安装进目标 skills 目录。
 
 另含 Claude Code 插件包（`claude-plugin/`，由 `scripts/pack-claude-plugin.sh` 组装）：打包主 skill 并附 PreToolUse hook 禁止自动 git push。
 
@@ -77,9 +78,9 @@ npx tech-tower-workflow --uninstall        # 卸载（加 --global 卸载全局�
 
 把这句话原样发给你的 AI（Codex / Claude Code 等）：
 
-> 请读取 https://raw.githubusercontent.com/zerotower69/tech-tower-workflow/main/skills/tech-tower-installer/SKILL.md 并按它自动完成技术塔工作流的安装。
+> 请读取 https://raw.githubusercontent.com/zerotower69/tech-tower-workflow/main/installer/SKILL.md 并按它自动完成技术塔工作流的安装。
 
-AI 会自动检测环境与项目中已用的 Agent（Codex / Claude Code 两大 Agent），确认范围后从 GitHub 下载压缩包安装到对应 skills 目录，验证并清理；完整规程见 `skills/tech-tower-installer/SKILL.md`。
+AI 会自动检测环境与项目中已用的 Agent（Codex / Claude Code 两大 Agent），确认范围后从 GitHub 下载压缩包安装到对应 skills 目录，验证并清理；完整规程见 `installer/SKILL.md`。
 
 ### 方式三：手动安装（无需 Node）
 
