@@ -1,0 +1,16 @@
+{
+  "description": "tech-tower-workflow hooks：禁止自动 git push",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/block-auto-push.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,76 @@
+# 技术塔 Workflow（头脑风暴集成视觉伴侣）
+# 历史来源文档已归档至 archive/（非产品面）
+# 格式：遵循 adaptive-workflow-topology 已定稿 YAML 契约
+#   - 顶层 transitions 键作为整版行为开关
+#   - 每个非 terminal 节点恰好一条前向 Rule
+#   - rules 从 start 出发构成唯一覆盖全部节点的前向路径
+#   - when 为自然语言，由 AI 判断，不作为服务端表达式执行
+
+name: 技术塔 workflow（视觉伴侣版）
+description: 工单从分析到交付的六步流水线；头脑风暴阶段可按需启用浏览器视觉伴侣
+
+transitions:
+  start: intake
+  terminal: pr
+
+  nodes:
+    - id: intake
+      label: 工单分析
+      objective: |
+        结合领域文档拷问工单，弄清问题、影响范围与关键上下文。
+    - id: brainstorm
+      label: 头脑风暴
+      objective: |
+        通过协作对话把需求收敛为 spec 并获得用户批准。
+        涉及视觉的问题可通过浏览器视觉伴侣展示原型、图表与对比。
+        权威产物：.scratch/<slug>/spec.md。
+    - id: plan
+      label: 技术方案
+      objective: |
+        在 spec 基础上拆解实现 Tickets，并同步产出对应测试用例
+        （权威产物：.scratch/<slug>/test-cases.md，与 plan.md 同时提交审查）。
+        用例与 Tickets、spec 验收标准逐条映射，按类型区分：
+        unit（纯逻辑模块，build 时可用 test_generator MCP 生成骨架）/
+        integration / manual（UI 与交互，走 DevTools 清单）。
+        test_generator MCP 集成运行手册：docs/plan-test-cases.md。
+    - id: build
+      label: 执行
+      objective: |
+        动代码前先执行 git 环境检查（运行手册：docs/build-git-bootstrap.md）：
+        目标目录不在 git 仓库内时，逐条引导用户创建新仓库——
+        1. 仓库命名与仓库根位置；2. 是否设置 local user.name/user.email；
+        3. 默认分支 master/main（默认 master）；4. .gitignore 模板；5. 是否关联远程。
+        完成首次提交后再开工；已在仓库内则确认分支与工作区状态后开工。
+        对 test-cases.md 中标记「可 MCP 骨架」的纯逻辑模块，用 test_generator MCP
+        生成测试骨架，然后修正骨架（模块体系/导入路径）并按用例规格补真实断言，
+        运行测试作为 ticket 验证的一部分；骨架未修正通过前不得宣称测试通过。
+        逐个 ticket 实施并完成必要验证，ticket 之间清理上下文。
+    - id: review
+      label: 代码审查
+      objective: |
+        独立审查实现是否满足 spec 与 Tickets，识别必须修复的问题。
+        注意：有一类问题静态审查发现不了，只能运行时暴露（组件样式隔离、
+        原生胶囊/安全区几何、条件渲染的真实状态组合等，清单见
+        docs/plan-test-cases.md 附录）。review 必须核对 test-cases.md 的
+        manual 用例是否已真实执行；未执行的单独声明，不以静态校验冒充。
+    - id: pr
+      label: 代码交付
+      objective: |
+        代码、验证结果和交付信息已经完整提供。
+
+  rules:
+    - from: intake
+      to: brainstorm
+      when: 问题、影响范围和关键上下文已经清楚，可以进入设计讨论
+    - from: brainstorm
+      to: plan
+      when: spec.md 已写入 .scratch/<slug>/ 并获得用户批准；若启用过视觉伴侣，服务器已停止并清理
+    - from: plan
+      to: build
+      when: 实现 Tickets 拆解完成，spec、Tickets 与测试用例（test-cases.md）齐备
+    - from: build
+      to: review
+      when: 全部 Tickets 实施完成且必要验证通过
+    - from: review
+      to: pr
+      when: 代码审查通过，必须修复的问题已修复并复核
