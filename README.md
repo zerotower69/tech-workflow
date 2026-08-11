@@ -29,18 +29,14 @@ flowchart LR
 
 > 单线串行流水线：节点内小字 = 该步骤内置的工具/产物，箭头上 = 该步骤的出口门槛。
 
-## 目录结构
+## 包含的 Skills
 
-| 文件 | 说明 |
-|---|---|
-| `workflow/tech-tower-workflow.yaml` | Workflow 定义（adaptive-workflow-topology YAML 契约：`transitions` + nodes + rules） |
-| `docs/brainstorm-visual-companion.md` | brainstorm 步骤增强指令：触发判断、征求同意、启动/事件读取/清理运行手册、HARD-GATE、集成要求 |
-| `docs/build-git-bootstrap.md` | build 前置步骤：git 环境检查与引导建仓（命名 / local config / 默认分支 / .gitignore / 远程） |
-| `docs/plan-test-cases.md` | plan 同步产物：测试用例规格（test-cases.md）格式、类型划分与 test_generator MCP 集成（工具清单 / 已知局限 / 修正纪律） |
-| `scripts/check-update.cjs` | 更新检查：每天首次启动比较 GitHub 最新 tag 与本地版本，有更新提示用户选择是否更新 |
-| `demo.md` | 端到端示例：一句话需求 → 可运行小程序的全过程复盘（含视觉伴侣交互实录与 review 修复记录） |
-| `visual-companion/GUIDE.md` | 视觉伴侣使用指南：何时用浏览器/终端、内容片段规范、CSS 类、事件格式 |
-| `visual-companion/scripts/` | 视觉伴侣本地服务器（server.cjs）、启停脚本、页面框架模板与客户端辅助脚本 |
+| Skill | 位置 | 说明 |
+|---|---|---|
+| `tech-tower-workflow` | 根目录 `SKILL.md` | 主 skill：六步工程流水线 intake→brainstorm→plan→build→review→pr，内置视觉伴侣、git 建仓引导、测试用例集成、运行时回归纪律与每日更新检查 |
+| `tech-tower-installer` | `installer/SKILL.md` | AI 自动安装 skill：环境自检测、确认 Agent 与安装范围、从 GitHub 下载安装、验证并清理 |
+
+另含 Claude Code 插件包（`claude-plugin/`，由 `scripts/pack-claude-plugin.sh` 组装）：打包主 skill 并附 PreToolUse hook 禁止自动 git push。
 
 ## 视觉伴侣速览
 
