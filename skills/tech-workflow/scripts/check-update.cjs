@@ -13,7 +13,7 @@ const https = require('https');
 
 const args = process.argv.slice(2);
 let force = false;
-let repo = 'zerotower69/tech-tower-workflow';
+let repo = 'zerotower69/tech-workflow';
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--force') force = true;
   else if (args[i] === '--repo') repo = String(args[++i] || '').replace(/^https:\/\/github\.com\//, '').replace(/\.git$/, '');

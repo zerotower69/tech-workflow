@@ -2,6 +2,6 @@ interface:
   display_name: "技术塔"
   short_description: "六步工程流水线：分析到交付，含视觉伴侣"
   brand_color: "#5F7D5A"
-  default_prompt: "小塔，分析一下以下需求，给我出个技术方案 $tech-tower-workflow：<一句话需求>"
+  default_prompt: "小塔，分析一下以下需求，给我出个技术方案 $tech-workflow：<一句话需求>"
 policy:
   allow_implicit_invocation: true

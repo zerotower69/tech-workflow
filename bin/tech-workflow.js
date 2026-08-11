@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// 技术塔工作流安装器（npx tech-tower-workflow）
+// 技术塔工作流安装器（npx tech-workflow）
 // 设计参考 superpowers-zh 的 bin 模式：零依赖 Node 脚本、TARGETS 表驱动、
 // 手写递归复制保证跨平台（含 Windows npx 缓存 junction）行为一致。
 //
@@ -120,17 +120,17 @@ const TARGETS = [
 
 function usage() {
   console.log(`
-  tech-tower-workflow v${PKG.version} — 技术塔 skills 安装器
+  tech-workflow v${PKG.version} — 技术塔 skills 安装器
 
   用法：
-    npx tech-tower-workflow                    项目级：自动检测 Codex / Claude Code 并装到当前项目
-    npx tech-tower-workflow --global           全局：装到用户级目录，所有项目共享
-    npx tech-tower-workflow --tool claude      指定目标安装（检测不到时使用）
-    npx tech-tower-workflow --global -t codex  全局 + 指定目标
-    npx tech-tower-workflow --uninstall        卸载项目级（加 --global 卸载全局）
-    npx tech-tower-workflow --force            允许在用户主目录(~)做项目级安装（默认拒绝）
-    npx tech-tower-workflow --help             显示帮助
-    npx tech-tower-workflow --version          显示版本
+    npx tech-workflow                    项目级：自动检测 Codex / Claude Code 并装到当前项目
+    npx tech-workflow --global           全局：装到用户级目录，所有项目共享
+    npx tech-workflow --tool claude      指定目标安装（检测不到时使用）
+    npx tech-workflow --global -t codex  全局 + 指定目标
+    npx tech-workflow --uninstall        卸载项目级（加 --global 卸载全局）
+    npx tech-workflow --force            允许在用户主目录(~)做项目级安装（默认拒绝）
+    npx tech-workflow --help             显示帮助
+    npx tech-workflow --version          显示版本
 
   包含的 skills（安装时全部复制到目标 skills 目录）：
 ${scanSkills().map(s => `    - ${s.name}`).join('\n')}
@@ -144,7 +144,7 @@ ${scanSkills().map(s => `    - ${s.name}`).join('\n')}
     项目级优先、全局兜底，二者可共存。
     触发方式：对 Agent 说「用技术塔工作流处理：<需求>」，或呼唤「小塔/阿塔，分析一下xxx，给我出个技术方案」。
 
-  项目：https://github.com/zerotower69/tech-tower-workflow
+  项目：https://github.com/zerotower69/tech-workflow
 `);
 }
 
@@ -198,7 +198,7 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 
-if (flags.version) { console.log(`tech-tower-workflow v${PKG.version}`); process.exit(0); }
+if (flags.version) { console.log(`tech-workflow v${PKG.version}`); process.exit(0); }
 
 const skills = scanSkills();
 if (flags.help) { usage(); process.exit(0); }
@@ -221,7 +221,7 @@ function resolveTargets() {
 const targets = resolveTargets();
 if (targets.length === 0) {
   console.error(`❌ 未检测到${flags.global ? '全局' : '项目级'} Codex / Claude Code 使用痕迹。`);
-  console.error(`   请用 --tool 显式指定，例如: npx tech-tower-workflow ${flags.global ? '--global ' : ''}--tool codex`);
+  console.error(`   请用 --tool 显式指定，例如: npx tech-workflow ${flags.global ? '--global ' : ''}--tool codex`);
   process.exit(1);
 }
 
@@ -243,7 +243,7 @@ let realHome = HOME;
 try { realHome = realpathSync(HOME); } catch { /* keep */ }
 if (!flags.global && realCwd === realHome && !flags.force) {
   console.error('❌ 项目级安装不允许在用户主目录（~）下执行。');
-  console.error('   想让所有项目可用，请用全局安装: npx tech-tower-workflow --global');
+  console.error('   想让所有项目可用，请用全局安装: npx tech-workflow --global');
   console.error('   如确实要装在当前目录，请加 --force。');
   process.exit(1);
 }

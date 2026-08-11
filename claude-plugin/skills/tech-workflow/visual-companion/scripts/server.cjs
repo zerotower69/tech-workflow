@@ -104,7 +104,7 @@ const CONTENT_DIR = path.join(SESSION_DIR, 'content');
 const STATE_DIR = path.join(SESSION_DIR, 'state');
 const COMPANION_NAME = '技术塔视觉伴侣';
 const COMPANION_VERSION = '1.0.0';
-const COMPANION_REPO_URL = 'https://github.com/zerotower69/tech-tower-workflow';
+const COMPANION_REPO_URL = 'https://github.com/zerotower69/tech-workflow';
 let ownerPid = process.env.BRAINSTORM_OWNER_PID ? Number(process.env.BRAINSTORM_OWNER_PID) : null;
 
 // Per-session secret key. The companion is reachable by any local browser tab
