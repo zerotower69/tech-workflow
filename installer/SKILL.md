@@ -3,7 +3,7 @@ name: tech-tower-installer
 description: 从 GitHub 自动化安装 tech-tower-workflow（技术塔工作流）技能包，支持 Codex 与 Claude Code 两大 Agent，项目/全局两种范围。当用户说「安装技术塔工作流」「装一下 tech-tower」「install tech-tower-workflow」时触发。
 metadata:
   short-description: 从 GitHub 一键自动安装技术塔工作流（Codex / Claude Code）
-  version: 1.7.0
+  version: 1.8.0
 ---
 
 # 技术塔工作流 · AI 自动安装
@@ -13,6 +13,17 @@ skill-name：`tech-tower-workflow`
 下载地址（GitHub 压缩包，无需 git）：
 - 默认 main：`https://github.com/zerotower69/tech-tower-workflow/archive/refs/heads/main.tar.gz`（或 `.zip`）
 - 指定版本：`https://github.com/zerotower69/tech-tower-workflow/archive/refs/tags/<tag>.tar.gz`
+
+## 0. 快速通道（环境有 Node ≥ 18 时优先）
+
+检测到 `node -v` ≥ 18 时，优先直接执行官方安装器（免下载、自带检测/镜像安装/版本验证）：
+
+- 项目级：`npx tech-tower-workflow`（自动检测 Codex / Claude Code）
+- 全局：`npx tech-tower-workflow --global`
+- 显式指定：`npx tech-tower-workflow --tool codex|claude`
+- 未发布到 npm registry 时改用：`npx github:zerotower69/tech-tower-workflow`（参数相同）
+
+成功即跳到第 4 节验证汇报；Node 不可用或安装器失败时，继续下面的下载流程。
 
 ## 1. 环境检测（自行检测，无需询问用户）
 

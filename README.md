@@ -57,11 +57,27 @@ flowchart LR
 
 详见 `docs/brainstorm-visual-companion.md` 与 `visual-companion/GUIDE.md`。
 
-## 作为 Codex Skill 使用
+## 安装
 
-本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.7.0**：
+本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.8.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，提供三种安装方式：
 
-### AI 自动安装（推荐）
+### 方式一：npm 一键安装（推荐，需 Node ≥ 18）
+
+```bash
+npx tech-tower-workflow                    # 项目级：自动检测 Codex / Claude Code 并装到当前项目
+npx tech-tower-workflow --global           # 全局：装到用户级目录，所有项目共享
+npx tech-tower-workflow --tool claude      # 检测不到时显式指定目标（codex / claude）
+npx tech-tower-workflow --uninstall        # 卸载（加 --global 卸载全局安装）
+```
+
+| Agent | 项目级 | 全局 |
+|---|---|---|
+| Codex | `.codex/skills/tech-tower-workflow/` | `$CODEX_HOME/skills/tech-tower-workflow/`（默认 `~/.codex`） |
+| Claude Code | `.claude/skills/tech-tower-workflow/` | `~/.claude/skills/tech-tower-workflow/` |
+
+安装为镜像覆盖（先清旧目录再整体复制，无旧版本残留）；Codex 目标自动排除 `claude-plugin/` 避免嵌套 SKILL.md 被扫成重复 skill；项目级安装拒绝在 `~` 下执行（防污染全局，`--force` 可解除）。未发布到 npm registry 前，可用 `npx github:zerotower69/tech-tower-workflow` 直接从 GitHub 运行同一安装器。
+
+### 方式二：AI 自动安装
 
 把这句话原样发给你的 AI（Codex / Claude Code 等）：
 
@@ -69,7 +85,7 @@ flowchart LR
 
 AI 会自动检测环境与项目中已用的 Agent（Codex / Claude Code 两大 Agent），确认范围后从 GitHub 下载压缩包安装到对应 skills 目录，验证并清理；完整规程见 `installer/SKILL.md`。
 
-### 手动安装
+### 方式三：手动安装（无需 Node）
 
 ```bash
 ./install.sh   # macOS / Linux / Git Bash：安装到 $CODEX_HOME/skills/tech-tower-workflow
@@ -81,9 +97,9 @@ powershell -ExecutionPolicy Bypass -File install.ps1   # Windows：等价安装
 
 Windows 说明：安装用 `install.ps1`；视觉伴侣等运行时脚本在 Git Bash/MSYS 下已自动适配，纯 PowerShell 环境可直接 `node visual-companion/scripts/server.cjs` 前台启动。
 
-Claude 安装目录自包含全部材料与脚本，可整目录拷贝移植；Codex 安装目录仅排除 `claude-plugin/`、`.claude-plugin/`（避免嵌套 SKILL.md 被扫成重复 skill），其余齐全。
+Claude 安装目录自包含全部材料与脚本，可整目录拷贝移植；Codex 安装目录排除 `claude-plugin/`、`.claude-plugin/`（避免嵌套 SKILL.md 被扫成重复 skill）与 npm 工程产物（`bin/`、`plugin-src/` 等），其余齐全。
 
-安装后对 Agent 说「用技术塔工作流处理：<需求>」即可触发；版本与变更见 `SKILL.md` 版本历史，git tag 同步打 `v1.0.0`。
+安装后对 Agent 说「用技术塔工作流处理：<需求>」即可触发；版本与变更见 `SKILL.md` 版本历史，git tag 与版本号同步（`vX.Y.Z`）。
 
 ### Claude Code 插件（v1.1.0+）
 
@@ -114,6 +130,17 @@ visual-companion/smoke-test.sh
 4. 停止：`visual-companion/scripts/stop-server.sh <会话目录>`。
 
 注意：`/tmp`（含系统临时目录）下的会话为一次性会话，停止时清理；使用真实项目目录则原型持久化在 `.tech-tower/brainstorm/`。
+
+## 维护者发版流程
+
+```bash
+npm version patch   # 或 minor / major：自动改 package.json 并同步全部版本位点（.npmrc 已禁用自动 tag）
+# 手工在 SKILL.md「版本历史」补一条 vX.Y.Z 记录
+./scripts/pack-claude-plugin.sh && ./install.sh   # 重组 Claude 插件包并同步本机全局安装
+git commit -am "feat: vX.Y.Z ..." && git tag -a vX.Y.Z -m "vX.Y.Z"   # push 需用户确认
+```
+
+版本位点清单见 `.version-bump.json`；同步脚本 `scripts/sync-version.js` 可单独运行做校验。
 
 ## 许可与来源
 

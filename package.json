@@ -1,0 +1,49 @@
+{
+  "name": "tech-tower-workflow",
+  "version": "1.8.0",
+  "description": "技术塔六步工程流水线（intake→brainstorm→plan→build→review→pr）：头脑风暴视觉伴侣、git 建仓引导、测试用例集成、运行时回归纪律。支持 Codex 与 Claude Code。",
+  "type": "module",
+  "bin": {
+    "tech-tower-workflow": "bin/tech-tower-workflow.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "version": "node scripts/sync-version.js && git add SKILL.md installer/SKILL.md README.md plugin-src/plugin.json .claude-plugin/marketplace.json install.sh install.ps1"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "docs/",
+    "agents/",
+    "workflow/",
+    "visual-companion/",
+    "installer/",
+    "claude-plugin/",
+    "SKILL.md",
+    "SOUL.md",
+    "demo.md",
+    "install.sh",
+    "install.ps1"
+  ],
+  "keywords": [
+    "workflow",
+    "brainstorming",
+    "visual-companion",
+    "testing",
+    "git-hooks",
+    "claude-code",
+    "codex",
+    "skills",
+    "ai-coding",
+    "技术塔"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zerotower69/tech-tower-workflow.git"
+  },
+  "homepage": "https://github.com/zerotower69/tech-tower-workflow",
+  "author": "zerotower",
+  "license": "MIT"
+}

@@ -3,10 +3,10 @@ name: tech-tower-workflow
 description: 技术塔六步工程流水线（intake→brainstorm→plan→build→review→pr）。当用户说「用技术塔工作流处理」「走技术塔流程」，或需要把一句话需求做成从分析到交付的完整工程闭环时使用。内置浏览器视觉伴侣（brainstorm 视觉决策）、git 建仓引导（build 前置）、测试用例与 test_generator MCP 集成（plan/build）、运行时回归纪律（review）。人格经 SOUL.md 注入（小塔/阿塔）；用户呼唤「小塔、阿塔，分析一下xxx，给我出个技术方案」同样触发。
 metadata:
   short-description: 技术塔六步流水线：视觉伴侣+建仓引导+测试集成
-  version: 1.7.0
+  version: 1.8.0
 ---
 
-# 技术塔工作流 v1.7.0
+# 技术塔工作流 v1.8.0
 
 六步流水线：intake → brainstorm → plan → build → review → pr。
 拓扑定义：`workflow/tech-tower-workflow.yaml`；端到端示例：`demo.md`。
@@ -53,6 +53,7 @@ visual-companion/smoke-test.sh   # 一键冒烟，无需人工交互
 
 ## 版本历史
 
+- **v1.8.0**（2026-08-11）：npm 工程化 —— 新增 `npx tech-tower-workflow` 一键安装器（`bin/tech-tower-workflow.js`：项目/全局范围、--tool/--uninstall、镜像覆盖、`~` 下安装护栏）；新增 `.version-bump.json` + `scripts/sync-version.js` 版本位点自动同步（npm version 钩子）；install.sh/install.ps1 收紧排除清单（排除 `plugin-src/`、`archive/`、`bin/`、`package.json` 等工程产物）；README 安装文档重构为三方式并列。
 - **v1.7.0**（2026-08-11）：新增 `scripts/check-update.cjs` 每日首次启动更新检查（GitHub tag 对比，提示用户选择是否更新，不阻塞）。
 - **v1.6.0**（2026-08-11）：新增原型快照：`snapshot-prototype.cjs` 只截 `data-tt-screen` 区域，brainstorm 收尾前征得同意（披露 token 估算与存放路径）后执行。
 - **v1.5.2**（2026-08-11）：installer 纪律增强：不打印完整命令、禁 rm -rf 旧目录，Codex 全局直接执行随包安装脚本；全程中文交流（强制）。
