@@ -10,9 +10,12 @@ New-Item -ItemType Directory -Force -Path $dest | Out-Null
 
 # /MIR 等价 rsync -a --delete；/XD 排除 .git 与 node_modules
 # robocopy 退出码 < 8 视为成功
-robocopy $src $dest /MIR /XD .git node_modules /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
+robocopy $src $dest /MIR /XD .git node_modules claude-plugin .claude-plugin /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
+foreach ($d in @('claude-plugin','.claude-plugin')) {
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue (Join-Path $dest $d)
+}
 if ($LASTEXITCODE -ge 8) {
     throw "robocopy failed with exit code $LASTEXITCODE"
 }
 
-Write-Output "installed: $dest (v1.4.0)"
+Write-Output "installed: $dest (v1.5.0)"

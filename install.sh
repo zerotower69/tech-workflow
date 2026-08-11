@@ -4,5 +4,6 @@ set -euo pipefail
 SRC="$(cd "$(dirname "$0")" && pwd)"
 DEST="${CODEX_HOME:-$HOME/.codex}/skills/tech-tower-workflow"
 mkdir -p "$DEST"
-rsync -a --delete --exclude '.git' --exclude 'node_modules' "$SRC/" "$DEST/"
-echo "installed: $DEST (v1.4.0)"
+rsync -a --delete --delete-excluded --exclude '.git' --exclude 'node_modules' \
+  --exclude '/claude-plugin' --exclude '/.claude-plugin' "$SRC/" "$DEST/"
+echo "installed: $DEST (v1.5.0)"

@@ -56,7 +56,7 @@ flowchart LR
 
 ## 作为 Codex Skill 使用
 
-本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.4.0**：
+本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.5.0**：
 
 ### AI 自动安装（推荐）
 
@@ -64,7 +64,7 @@ flowchart LR
 
 > 请读取 https://raw.githubusercontent.com/zerotower69/tech-tower-workflow/main/installer/SKILL.md 并按它自动完成技术塔工作流的安装。
 
-AI 会自动从 GitHub 克隆、按平台安装、验证触发方式并清理临时目录；完整规程见 `installer/SKILL.md`。
+AI 会自动检测环境与项目中已用的 Agent（Codex / Claude Code 两大 Agent），确认范围后从 GitHub 下载压缩包安装到对应 skills 目录，验证并清理；完整规程见 `installer/SKILL.md`。
 
 ### 手动安装
 
@@ -77,6 +77,8 @@ powershell -ExecutionPolicy Bypass -File install.ps1   # Windows：等价安装
 ```
 
 Windows 说明：安装用 `install.ps1`；视觉伴侣等运行时脚本在 Git Bash/MSYS 下已自动适配，纯 PowerShell 环境可直接 `node visual-companion/scripts/server.cjs` 前台启动。
+
+Claude 安装目录自包含全部材料与脚本，可整目录拷贝移植；Codex 安装目录仅排除 `claude-plugin/`、`.claude-plugin/`（避免嵌套 SKILL.md 被扫成重复 skill），其余齐全。
 
 安装后对 Agent 说「用技术塔工作流处理：<需求>」即可触发；版本与变更见 `SKILL.md` 版本历史，git tag 同步打 `v1.0.0`。
 
