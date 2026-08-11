@@ -16,6 +16,19 @@ intake → brainstorm → plan → build → review → pr
 - spec 与 Tickets 统一保存在 `.scratch/<feature-slug>/`；全流程在同一个 Ticket Session 内推进。
 - 本次扩展只增强 brainstorm 步骤，拓扑、绑定与产物约定不变。
 
+## 流水线（mermaid）
+
+```mermaid
+flowchart LR
+  A["intake 工单分析"] -->|"问题/影响/上下文清楚"| B["brainstorm 头脑风暴<br/>内置视觉伴侣·浏览器比稿/点选"]
+  B -->|"spec 获批·视觉伴侣清理"| C["plan 技术方案<br/>同步 test-cases.md·test_generator MCP"]
+  C -->|"spec+Tickets+用例齐备"| D["build 执行<br/>git 建仓引导·.repository 容器"]
+  D -->|"tickets 完成·验证通过"| E["review 代码审查<br/>运行时回归清单"]
+  E -->|"必须修复项清零"| F["pr 代码交付"]
+```
+
+> 单线串行流水线：节点内小字 = 该步骤内置的工具/产物，箭头上 = 该步骤的出口门槛。
+
 ## 目录结构
 
 | 文件 | 说明 |
