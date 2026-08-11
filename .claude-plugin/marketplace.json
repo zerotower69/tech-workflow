@@ -8,7 +8,7 @@
       "name": "tech-tower-workflow",
       "source": "./claude-plugin",
       "description": "技术鹅六步工程流水线：视觉伴侣、git 建仓引导、测试集成、禁止自动 push hook",
-      "version": "1.3.0"
+      "version": "1.4.0"
     }
   ]
 }

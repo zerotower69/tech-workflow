@@ -56,7 +56,17 @@ flowchart LR
 
 ## 作为 Codex Skill 使用
 
-本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.3.0**：
+本仓库根目录即 skill 包（`SKILL.md` + `agents/openai.yaml`），当前版本 **v1.4.0**：
+
+### AI 自动安装（推荐）
+
+把这句话原样发给你的 AI（Codex / Claude Code 等）：
+
+> 请读取 https://raw.githubusercontent.com/zerotower69/tech-tower-workflow/main/installer/SKILL.md 并按它自动完成技术塔工作流的安装。
+
+AI 会自动从 GitHub 克隆、按平台安装、验证触发方式并清理临时目录；完整规程见 `installer/SKILL.md`。
+
+### 手动安装
 
 ```bash
 ./install.sh   # macOS / Linux / Git Bash：安装到 $CODEX_HOME/skills/tech-tower-workflow
