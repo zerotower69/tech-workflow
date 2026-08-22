@@ -142,6 +142,7 @@ ${scanSkills().map(s => `    - ${s.name}`).join('\n')}
   说明：
     安装为镜像覆盖：先移除目标旧目录再整体复制，无旧版本残留。
     项目级优先、全局兜底，二者可共存。
+    可迁移沙箱 CLI：tech-workflow-sandbox --help（或直接运行 skill 内 scripts/sandbox/cli.cjs）。
     工程交付：对 Agent 说「用技术塔工作流处理：<需求>」。
     只做 UI：对 Agent 说「用技术塔视觉伴侣完成 UI 设计：<需求>」。
 
