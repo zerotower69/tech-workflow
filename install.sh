@@ -13,4 +13,4 @@ for skill_dir in "$SRC"/skills/*/; do
   rsync -a --delete --delete-excluded --exclude '.DS_Store' "$skill_dir" "$dest/"
   count=$((count + 1))
 done
-echo "installed: $count skills → $DEST_BASE (v1.13.0)"
+echo "installed: $count skills → $DEST_BASE (v1.14.0)"

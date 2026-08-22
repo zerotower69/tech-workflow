@@ -17,6 +17,7 @@ transitions:
     - id: intake
       label: 工单分析
       objective: |
+        先用 scripts/sandbox/cli.cjs 创建或恢复 .scratch/<slug>/ 确定性沙箱；恢复时读取 status、validate 与 handoff。
         在任何需求追问前，把任务首次启动时已给到的信息固化为
         .scratch/<slug>/ticket_context.md（运行手册：references/intake-ticket-context.md），
         经用户确认后作为后续阶段只读的初始上下文基线。
@@ -24,13 +25,15 @@ transitions:
     - id: brainstorm
       label: 头脑风暴
       objective: |
-        先读取 ticket_context.md，再通过协作对话把需求收敛为 spec 并获得用户批准。
+        先读取 ticket_context.md，完成 clarify → knowledge → spec 三个检查点。
+        知识库仅提供带来源的参考；无知识源显式跳过，冲突写入 decisions.md 并由用户决定。
+        再通过协作对话把需求收敛为带 revision 的 spec 并获得用户批准。
         涉及视觉的问题可通过浏览器视觉伴侣展示原型、图表与对比。
         权威产物：.scratch/<slug>/spec.md。
     - id: plan
       label: 技术方案
       objective: |
-        先读取 ticket_context.md，在 spec 基础上拆解实现 Tickets，并同步产出对应测试用例
+        先读取 ticket_context.md，在当前批准的 spec revision 基础上拆解一对一 Plan、实现 Tickets，并同步产出对应测试用例
         （权威产物：.scratch/<slug>/test-cases.md，与 plan.md 同时提交审查）。
         用例与 Tickets、spec 验收标准逐条映射，按类型区分：
         unit（纯逻辑模块，build 时可用 test_generator MCP 生成骨架）/
@@ -52,6 +55,7 @@ transitions:
         逐个 ticket 实施并完成必要验证；每次 Ticket 提交后立即刷新 repo.json 的
         head_commit 并追加 checkpoint，再清理 ticket 上下文。
         build 收尾时提交剩余改动，并把各仓库当前 HEAD 写入 repo.json 的 final_commit。
+        每个 Commit 通过沙箱命令写入 commits.jsonl；Skill 版本写入 skill-lock.yaml。
     - id: review
       label: 代码审查
       objective: |
@@ -61,25 +65,26 @@ transitions:
         原生胶囊/安全区几何、条件渲染的真实状态组合等，清单见
         references/plan-test-cases.md 附录）。review 必须核对 test-cases.md 的
         manual 用例是否已真实执行；未执行的单独声明，不以静态校验冒充。
+        Plan Review 与 Integration Review 写入 reviews.jsonl；需要回退时调用 rollback，禁止删除历史或 git reset。
     - id: pr
       label: 代码交付
       objective: |
         校验 repo.json 中各仓库 final_commit 等于当前 HEAD；以 base_commit..final_commit
-        汇总代码、验证结果和交付信息。
+        汇总代码、验证结果和交付信息。执行 strict validate，刷新 handoff；需要跨机器交接时生成 .tws。
 
   rules:
     - from: intake
       to: brainstorm
-      when: ticket_context.md 已写入 .scratch/<slug>/ 并获用户确认，且问题、影响范围和关键上下文已经清楚，可以进入设计讨论
+      when: 确定性沙箱存在且 validate 通过；ticket_context revision 已获用户批准，问题、影响范围和关键上下文已经清楚，可以进入 brainstorm:clarify
     - from: brainstorm
       to: plan
-      when: ticket_context.md 仍存在，spec.md 已写入 .scratch/<slug>/ 并获得用户批准；若启用过视觉伴侣，服务器已停止并清理
+      when: clarify 与 knowledge 检查点完成（或 knowledge 有理由地显式跳过），冲突已解决；当前 spec revision 已获得用户批准；若启用过视觉伴侣，服务器已停止并清理
     - from: plan
       to: build
-      when: 实现 Tickets 拆解完成，ticket_context.md、spec、Tickets 与测试用例（test-cases.md）齐备
+      when: 一对一 Plan 引用当前批准的 spec revision 且已批准；ticket_context、Tickets 与测试用例齐备，沙箱 transition build 门禁通过
     - from: build
       to: review
-      when: 全部 Tickets 实施完成且必要验证通过；repo.json 已记录所有施工仓库，base_commit 与 final_commit 均有效且本 Ticket 改动已提交
+      when: 全部 Tickets 实施完成且必要验证通过；repo.json 已记录所有施工仓库和完整 SHA，base_commit 与 final_commit 均有效；Commit 证据已写入
     - from: review
       to: pr
-      when: 代码审查通过，必须修复的问题已修复并复核；review 修复已提交，repo.json 的 final_commit 已刷新且等于各仓库当前 HEAD
+      when: Plan Review 与 Integration Review 已记录且通过，必须修复的问题已修复并复核；repo.json final_commit 等于实际 HEAD；strict validate 通过

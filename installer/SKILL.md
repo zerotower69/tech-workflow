@@ -3,7 +3,7 @@ name: tech-workflow-installer
 description: 从 GitHub 自动化安装技术塔技能包（工程工作流 + 独立 UI 视觉伴侣），支持 Codex 与 Claude Code 两大 Agent，项目/全局两种范围。当用户说「安装技术塔工作流」「安装技术塔视觉伴侣」「install tech-workflow」时触发。
 metadata:
   short-description: 从 GitHub 一键自动安装技术塔工作流（Codex / Claude Code）
-  version: 1.13.0
+  version: 1.14.0
 ---
 
 # 技术塔工作流 · AI 自动安装

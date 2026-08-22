@@ -1,4 +1,4 @@
-# build 产物：repo.json
+# build 产物：repo.json（schema v2）
 
 `repo.json` 是施工期间持续补齐的仓库交接清单，存放在：
 
@@ -7,6 +7,45 @@
 ```
 
 它记录本 Ticket 实际修改了哪些仓库、在哪个分支施工，以及审查和交付应比较的 commit 边界。多仓任务必须为每个仓库保留独立记录。
+
+v1.14.0 的权威结构为 `schemaVersion: 2`，使用 `workspaceRoot`、`baseCommit`、`headCommit`、`finalCommit`、`pushStatus` 和 `lastVerifiedAt`。旧 `schema_version: 1` 仅作为迁移输入，通过以下命令单向升级；不得并存第二个 `repositories.json`：
+
+```bash
+tech-workflow-sandbox migrate-repo .scratch/<slug>
+tech-workflow-sandbox verify-repositories .scratch/<slug>
+```
+
+schema v2 仓库项示例：
+
+```json
+{
+  "schemaVersion": 2,
+  "sandboxId": "feature-slug",
+  "workspaceRoot": "/absolute/path/to/workspace",
+  "repositories": [
+    {
+      "id": "web-app",
+      "path": ".repository/web-app",
+      "url": "https://github.com/example/web-app.git",
+      "remote": "origin",
+      "baseBranch": "main",
+      "baseCommit": "0123456789abcdef0123456789abcdef01234567",
+      "targetBranch": "feature/checkout",
+      "headCommit": "89abcdef0123456789abcdef0123456789abcdef",
+      "finalCommit": "89abcdef0123456789abcdef0123456789abcdef",
+      "pushStatus": "unpushed",
+      "lastVerifiedAt": "2026-08-23T12:30:00+08:00",
+      "statusAtBase": [],
+      "statusAtFinal": [],
+      "excludedDirtyPaths": [],
+      "checkpoints": []
+    }
+  ],
+  "changes": []
+}
+```
+
+所有 Commit 字段必须使用完整 40 位 SHA。分支名是可移动引用，不能作为复现依据。
 
 ## 生命周期
 
@@ -22,7 +61,7 @@
 
 已有 `repo.json` 时先读取并验证实际仓库状态，不得重新生成覆盖。需要更换仓库、分支或 base 时，先向用户说明原因；保留原记录到 `changes` 数组后再更新。
 
-## JSON 结构
+## 旧版 JSON 结构（schema v1，仅供迁移器输入）
 
 ```json
 {
@@ -63,7 +102,7 @@
 }
 ```
 
-字段约束：
+以下 snake_case 字段仅说明旧版含义；新文件统一使用上方 schema v2 的 camelCase 字段：
 
 - `path`：相对 `workspace_root` 的路径；只有仓库在 workspace 外时才使用绝对路径并说明原因。
 - `branch`：`git branch --show-current` 的结果；detached HEAD 时为 `null`，并设 `detached_head: true`。未经用户确认不要在 detached HEAD 上施工。

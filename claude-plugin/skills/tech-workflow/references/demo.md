@@ -3,6 +3,14 @@
 > 真实用例复盘：从一句话需求到可运行的微信小程序，全程走 `intake → brainstorm → plan → build → review` 流水线。
 > 需求输入：**「用一个小程序一级入口页面设计来做测试用例，使用这个工作流」**
 
+## Step 0 · 创建确定性沙箱（v1.14.0+）
+
+```bash
+node skills/tech-workflow/scripts/sandbox/cli.cjs create mp-entry-page --root .scratch --title "小程序一级入口页面"
+```
+
+后续每次批准产物或进入下一阶段，都通过 `revise` / `approve` / `transition` 写入 revision 与事件。恢复会话先运行 `status`、`validate` 并读取 `handoff.md`；完整命令见 `docs/portable-sandbox.md`。
+
 ## 成果概览
 
 | 产物 | 位置 |

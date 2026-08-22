@@ -3,10 +3,10 @@ name: tech-workflow
 description: 技术塔六步工程执行流水线（intake→brainstorm→plan→build→review→pr）。当用户明确要走技术塔流程，或需要把需求落实为代码、测试、审查与交付的完整工程闭环时使用。内置 brainstorm 视觉决策、git 建仓引导、测试用例集成和运行时回归。只想完成 UI/UX 设计、页面原型或视觉比稿而不实现代码时，不使用本 skill，改用 tech-visual-companion。
 metadata:
   short-description: 技术塔六步流水线：视觉伴侣+建仓引导+测试集成
-  version: 1.13.0
+  version: 1.14.0
 ---
 
-# 技术塔工作流 v1.13.0
+# 技术塔工作流 v1.14.0
 
 六步流水线：intake → brainstorm → plan → build → review → pr。
 拓扑定义：`workflow/tech-workflow.yaml`；端到端示例：`demo.md`。
@@ -23,6 +23,10 @@ metadata:
 - HARD-GATE：spec 未批准不写 plan；plan 未批准不动代码。
 - 步骤完成 = 产物落盘 + 用户批准。
 - intake 启动即把首次给到的信息写入 `.scratch/<slug>/ticket_context.md`；用户确认后作为只读基线，后续阶段先读取它，不用新结论覆盖初始上下文。
+- 新 Ticket 优先用 `scripts/sandbox/cli.cjs create` 建立机器可读沙箱；恢复任务先执行 `status` + `validate` 并读取 `handoff.md`，不得重新生成覆盖。
+- 阶段迁移、产物批准、回退、Commit/Review 证据、Skill Lock 与 pack/restore 必须通过确定性沙箱命令完成；不得只改 Markdown 宣称状态已变化。完整手册：`docs/portable-sandbox.md`。
+- context 与澄清收口后先走 knowledge 检查点，再形成 Spec。知识库只提供带来源的参考；无知识源可记录原因后显式跳过，冲突必须由用户决定并写入 `decisions.md`。
+- 已批准产物发生变化必须创建新 revision；回退保留旧文档和 Commit，并把依赖旧 revision 的下游产物标记为 `stale`。
 - build 在第一处施工改动前创建 `.scratch/<slug>/repo.json`，记录每个仓库的路径、分支和 base commit；施工期间随仓库/分支/每个 Ticket 提交持续补齐 head 与 checkpoints，收尾记录 final commit，review 修复提交后同步刷新。
 - 验证分层：静态校验 ≠ 运行时证明；未真实执行的验证单独声明。
 - 产物约定：工作流产物在 `.scratch/<slug>/`；代码仓库在 `.repository/` 容器目录（可容纳多个 git 仓库，自身不是仓库）。
@@ -37,12 +41,12 @@ metadata:
 
 | 步骤 | 要点 | 手册 |
 |---|---|---|
-| intake | 先固化首次启动信息为 ticket_context.md，再结合领域文档拷问工单 | `docs/intake-ticket-context.md` |
-| brainstorm | 视觉问题征求同意后启用视觉伴侣；收敛为 spec 并获批；原型快照需同意（告知消耗与路径） | `docs/brainstorm-visual-companion.md` |
+| intake | 创建/恢复确定性沙箱，固化 ticket_context，再结合领域文档拷问工单 | `docs/intake-ticket-context.md`、`docs/portable-sandbox.md` |
+| brainstorm | 澄清→知识参考→spec；视觉问题可启用视觉伴侣；spec revision 获批后迁移 | `docs/brainstorm-visual-companion.md`、`docs/portable-sandbox.md` |
 | plan | 拆 Tickets **同时**产出 test-cases.md（unit/integration/manual） | `docs/plan-test-cases.md` |
 | build | git 底座确认后创建 repo.json；逐 Ticket 持续补齐仓库/分支/checkpoints，收尾锁定 final commit | `docs/build-git-bootstrap.md`、`docs/build-repo-manifest.md` |
 | review | 独立审查 + 核对 manual 用例真实执行；运行时专属问题清单逐条回归 | `docs/plan-test-cases.md` 附录 |
-| pr | 交付代码、验证结果与交付信息 | — |
+| pr | 严格校验；交付代码、验证、handoff 与可选 `.tws` 迁移包 | `docs/portable-sandbox.md` |
 
 ## 视觉伴侣速览
 
@@ -61,6 +65,7 @@ visual-companion/smoke-test.sh   # 一键冒烟，无需人工交互
 
 ## 版本历史
 
+- **v1.14.0**（2026-08-23）：新增零依赖可迁移工作流沙箱内核与 `tech-workflow-sandbox` CLI——机器可读阶段/门禁、产物 revision 与 hash、知识参考检查点、追加式事件、结构化回退和 stale 传播、Git/Commit/Review 证据、Skill Lock、handoff，以及带 bundle/patch/untracked 保护的 `.tws` pack/restore；保留六步用户流程和既有安装器兼容。
 - **v1.13.0**（2026-08-23）：build 新增持续补齐的 `.scratch/<slug>/repo.json` 仓库交接清单；施工前按仓库记录路径、分支、脱离 HEAD、脱敏 remotes 与 `base_commit`，每次 Ticket 提交刷新 `head_commit` 并追加 checkpoint，build 收尾填写 `final_commit`，review 修复提交后刷新，pr 以 `base_commit..final_commit` 锁定最终交付范围。
 - **v1.12.0**（2026-08-23）：intake 新增权威启动快照 `.scratch/<slug>/ticket_context.md`，在首次追问前记录用户原始请求、给定材料、环境与初始项目状态；用户确认后保持只读，作为 brainstorm/plan/build/review 的共同上下文基线，防止长流程或上下文压缩造成初始信息丢失。
 - **v1.11.0**（2026-08-22）：新增独立 `tech-visual-companion` skill——用户只想做 UI/UX 设计时，可直接进入浏览器比稿、点选、逐屏迭代与 `design-spec.md` 交付，不再被迫进入 plan/build/review/pr；工程 skill 增加明确路由边界，安装器与 Claude 插件同步打包两个 skills。

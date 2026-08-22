@@ -12,6 +12,19 @@ intake → brainstorm → plan → build → review → pr
           （视觉伴侣）  （+测试用例） （git 建仓引导+测试骨架）
 ```
 
+v1.14.0 起，六步流程由可迁移沙箱内核提供机器可读状态：context 确认后经过 clarify → knowledge → spec 检查点，再进入一对一 Plan。阶段迁移、revision、事件、回退、Git 证据和交接不再只依赖 Markdown 纪律。
+
+## 可迁移工作流沙箱
+
+```bash
+tech-workflow-sandbox create my-ticket --root .scratch
+tech-workflow-sandbox status .scratch/my-ticket --json
+tech-workflow-sandbox validate .scratch/my-ticket --strict --json
+tech-workflow-sandbox pack .scratch/my-ticket --output my-ticket.tws
+```
+
+`.tws` 默认只保存工作流产物与完整 Commit 引用；未推送 Commit、已跟踪未提交改动和重要未跟踪文件会分别通过 Git bundle、binary patch 和 payload 保护。恢复会拒绝摘要损坏、路径穿越、非空目标和冲突，不自动覆盖工作区。详见 `skills/tech-workflow/docs/portable-sandbox.md`。
+
 - 每步强制绑定且只执行一个工程 Skill：`grill-with-docs` / `to-spec` / `to-tickets` / `implement` / `code-review`，pr 无绑定。
 - intake 会先把任务首次启动时给到的信息固化为 `.scratch/<feature-slug>/ticket_context.md`；确认后作为后续阶段的只读上下文基线。
 - build 会创建并持续补齐 `.scratch/<feature-slug>/repo.json`：按仓库记录施工分支和 `base_commit`，每次 Ticket 提交刷新 `head_commit`/checkpoints，交付时记录 `final_commit`，供 review/pr 锁定 diff 边界。
@@ -21,8 +34,8 @@ intake → brainstorm → plan → build → review → pr
 
 ```mermaid
 flowchart LR
-  A["intake 工单分析<br/>固化 ticket_context.md"] -->|"启动快照确认·问题/影响清楚"| B["brainstorm 头脑风暴<br/>内置视觉伴侣·浏览器比稿/点选"]
-  B -->|"spec 获批·视觉伴侣清理"| C["plan 技术方案<br/>同步 test-cases.md·test_generator MCP"]
+  A["intake 工单分析<br/>沙箱·ticket_context"] -->|"context revision 获批"| B["brainstorm 头脑风暴<br/>clarify→knowledge→spec"]
+  B -->|"spec revision 获批·冲突清零"| C["plan 技术方案<br/>一对一 Plan·test-cases"]
   C -->|"spec+Tickets+用例齐备"| D["build 执行<br/>git 建仓·repo.json 锁定 commits"]
   D -->|"tickets 完成·final commit 已记录"| E["review 代码审查<br/>base..final 回归"]
   E -->|"必须修复项清零"| F["pr 代码交付"]
@@ -68,7 +81,7 @@ flowchart LR
 
 ## 安装
 
-本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.13.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。提供三种安装方式：
+本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.14.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。提供三种安装方式：
 
 ### 方式一：npm 一键安装（推荐，需 Node ≥ 18）
 

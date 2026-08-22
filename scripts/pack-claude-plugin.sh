@@ -28,6 +28,7 @@ sed 's|docs/|references/|g' \
     "$SRC/workflow/tech-workflow.yaml" > "$SK/references/tech-workflow.yaml"
 cp "$SRC/demo.md" "$SK/references/"
 cp "$SRC/SOUL.md" "$SK/SOUL.md"
+cp -R "$SRC/scripts" "$SK/scripts"
 cp "$SRC/visual-companion/GUIDE.md" "$SK/visual-companion/"
 cp "$SRC/visual-companion/smoke-test.sh" "$SK/visual-companion/"
 cp -R "$SRC/visual-companion/scripts" "$SK/visual-companion/scripts"
