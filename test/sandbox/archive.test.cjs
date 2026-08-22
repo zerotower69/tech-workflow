@@ -61,3 +61,9 @@ test('TC-120: Patch 冲突清理暂存沙箱和新建仓库', () => {
   assert.throws(() => archive.restoreSandbox(bad, restoredSandbox, { workspaceRoot: restoredWorkspace }), { code: 'E_RESTORE_CONFLICT' });
   assert.equal(fs.existsSync(restoredSandbox), false); assert.equal(fs.existsSync(path.join(restoredWorkspace, '.repository', 'app')), false);
 });
+
+test('TC-118: 无法安全保护的未跟踪项阻止 Pack', { skip: process.platform === 'win32' ? 'Windows 符号链接权限不稳定' : false }, () => {
+  const f = fixture(); fs.symlinkSync('README.md', path.join(f.repo, 'unsafe-link'));
+  const out = path.join(temp(), 'demo.tws'); assert.throws(() => archive.packSandbox(f.root, out), { code: 'E_PACK_UNTRACKED' });
+  assert.equal(fs.existsSync(out), false);
+});
