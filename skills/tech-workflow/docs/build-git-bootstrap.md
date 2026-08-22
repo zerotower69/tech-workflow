@@ -2,6 +2,7 @@
 
 > 适用节点：`build`（动第一行代码之前）
 > 纪律：**一次只问一个问题**，每问都给出默认值；用户可回答「全部默认」一次性跳过。
+> 仓库清单：完成本检查后、施工改动前，按 `build-repo-manifest.md` 创建 `.scratch/<slug>/repo.json`。
 
 ## 1. 何时触发
 
@@ -28,7 +29,7 @@ git rev-parse --is-inside-work-tree            # 1. 是否已在仓库内
 <项目根>/
 ├── .repository/          ← 仓库容器（可有多个 git 仓库）
 │   └── <仓库名>/          ← 在这里 git init
-├── .scratch/             ← 工作流产物（spec/plan/mockups，不进仓库）
+├── .scratch/             ← 工作流产物（ticket_context/spec/plan/mockups，不进仓库）
 └── .tech-tower/          ← 视觉伴侣会话（不进仓库）
 ```
 
@@ -69,4 +70,6 @@ git commit -m "chore: init <仓库名> skeleton"
 
 ## 5. 完成条件
 
-`git log` 有首次提交且 `git status` 干净——满足后才允许开始第一个 ticket。
+`git log` 有提交，工作流改动有干净底座，并且 `repo.json` 已记录仓库、分支与 `base_commit`（`final_commit` 此时为 `null`）——满足后才允许开始第一个 ticket。
+
+施工期间每次 Ticket 提交后都刷新 `repo.json.head_commit` 并追加 checkpoint；施工结束后把当前 `HEAD` 写入 `final_commit`。完整结构、用户既有脏文件处理和 review 刷新规则见 `build-repo-manifest.md`。

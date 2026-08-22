@@ -1,9 +1,9 @@
 ---
 name: tech-workflow-installer
-description: 从 GitHub 自动化安装 tech-workflow（技术塔工作流）技能包，支持 Codex 与 Claude Code 两大 Agent，项目/全局两种范围。当用户说「安装技术塔工作流」「装一下 tech-tower」「install tech-workflow」时触发。
+description: 从 GitHub 自动化安装技术塔技能包（工程工作流 + 独立 UI 视觉伴侣），支持 Codex 与 Claude Code 两大 Agent，项目/全局两种范围。当用户说「安装技术塔工作流」「安装技术塔视觉伴侣」「install tech-workflow」时触发。
 metadata:
   short-description: 从 GitHub 一键自动安装技术塔工作流（Codex / Claude Code）
-  version: 1.10.0
+  version: 1.13.0
 ---
 
 # 技术塔工作流 · AI 自动安装
@@ -61,7 +61,7 @@ skill-name：`tech-workflow`
 ## 4. 验证与汇报
 
 - 检查每个已安装 skill 目录存在 `SKILL.md`（`skills/` 下有几个装几个），读取 frontmatter `version` 汇报。
-- 告知触发方式：「用技术塔工作流处理：<需求>」或「小塔/阿塔，分析一下xxx，给我出个技术方案」。
+- 告知触发方式：「用技术塔工作流处理：<需求>」用于工程交付；「用技术塔视觉伴侣完成 UI 设计：<需求>」用于只做设计。
 
 ## 纪律
 

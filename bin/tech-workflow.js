@@ -142,7 +142,8 @@ ${scanSkills().map(s => `    - ${s.name}`).join('\n')}
   说明：
     安装为镜像覆盖：先移除目标旧目录再整体复制，无旧版本残留。
     项目级优先、全局兜底，二者可共存。
-    触发方式：对 Agent 说「用技术塔工作流处理：<需求>」，或呼唤「小塔/阿塔，分析一下xxx，给我出个技术方案」。
+    工程交付：对 Agent 说「用技术塔工作流处理：<需求>」。
+    只做 UI：对 Agent 说「用技术塔视觉伴侣完成 UI 设计：<需求>」。
 
   项目：https://github.com/zerotower69/tech-workflow
 `);
@@ -254,5 +255,6 @@ for (const t of targets) installOne(t, flags.global, skills);
 console.log(`
   安装完成。触发方式：
     - 「用技术塔工作流处理：<需求>」
+    - 「用技术塔视觉伴侣完成 UI 设计：<需求>」
     - 「小塔/阿塔，分析一下xxx，给我出个技术方案」
 ${flags.global ? '' : '  提示：项目级仅当前项目可用；多项目共享请用 --global。\n'}`);

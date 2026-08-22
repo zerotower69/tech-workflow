@@ -1,6 +1,6 @@
 # tech-workflow
 
-「技术塔」：工单分析到代码交付的六步工程流水线，头脑风暴（brainstorm）步骤内置**技术塔视觉伴侣**——设计讨论中可以用浏览器向用户展示原型、图表与并排对比。
+「技术塔」现在包含两个边界清晰的 skill：用于代码交付的六步工程流水线，以及可单独完成 UI/UX 设计的**技术塔视觉伴侣**。只想做界面设计时，不必进入 plan、build、review 或 pr。
 
 视觉伴侣自包含于 `skills/tech-workflow/visual-companion/`，**不依赖 superpowers 插件/技能**：代码改自 superpowers 6.2.0 的 brainstorming visual companion（MIT），已改名、移除原品牌/远程 logo/遥测相关逻辑，持久化路径改为 `.tech-tower/brainstorm/`。
 
@@ -13,17 +13,18 @@ intake → brainstorm → plan → build → review → pr
 ```
 
 - 每步强制绑定且只执行一个工程 Skill：`grill-with-docs` / `to-spec` / `to-tickets` / `implement` / `code-review`，pr 无绑定。
-- spec 与 Tickets 统一保存在 `.scratch/<feature-slug>/`；全流程在同一个 Ticket Session 内推进。
-- 本次扩展只增强 brainstorm 步骤，拓扑、绑定与产物约定不变。
+- intake 会先把任务首次启动时给到的信息固化为 `.scratch/<feature-slug>/ticket_context.md`；确认后作为后续阶段的只读上下文基线。
+- build 会创建并持续补齐 `.scratch/<feature-slug>/repo.json`：按仓库记录施工分支和 `base_commit`，每次 Ticket 提交刷新 `head_commit`/checkpoints，交付时记录 `final_commit`，供 review/pr 锁定 diff 边界。
+- ticket_context、spec 与 Tickets 统一保存在 `.scratch/<feature-slug>/`；全流程在同一个 Ticket Session 内推进。
 
 ## 流水线（mermaid）
 
 ```mermaid
 flowchart LR
-  A["intake 工单分析"] -->|"问题/影响/上下文清楚"| B["brainstorm 头脑风暴<br/>内置视觉伴侣·浏览器比稿/点选"]
+  A["intake 工单分析<br/>固化 ticket_context.md"] -->|"启动快照确认·问题/影响清楚"| B["brainstorm 头脑风暴<br/>内置视觉伴侣·浏览器比稿/点选"]
   B -->|"spec 获批·视觉伴侣清理"| C["plan 技术方案<br/>同步 test-cases.md·test_generator MCP"]
-  C -->|"spec+Tickets+用例齐备"| D["build 执行<br/>git 建仓引导·.repository 容器"]
-  D -->|"tickets 完成·验证通过"| E["review 代码审查<br/>运行时回归清单"]
+  C -->|"spec+Tickets+用例齐备"| D["build 执行<br/>git 建仓·repo.json 锁定 commits"]
+  D -->|"tickets 完成·final commit 已记录"| E["review 代码审查<br/>base..final 回归"]
   E -->|"必须修复项清零"| F["pr 代码交付"]
 ```
 
@@ -33,13 +34,24 @@ flowchart LR
 
 | Skill | 位置 | 说明 |
 |---|---|---|
-| `tech-workflow` | `skills/tech-workflow/SKILL.md` | 主 skill：六步工程流水线 intake→brainstorm→plan→build→review→pr，内置视觉伴侣、git 建仓引导、测试用例集成、运行时回归纪律与每日更新检查 |
+| `tech-workflow` | `skills/tech-workflow/SKILL.md` | 六步工程执行流水线 intake→brainstorm→plan→build→review→pr，负责代码、测试、审查与交付 |
+| `tech-visual-companion` | `skills/tech-visual-companion/SKILL.md` | 独立 UI/UX 设计闭环：浏览器比稿、点选、迭代、原型与 design-spec 交付，不自动进入开发 |
 
 `installer/SKILL.md`（`tech-workflow-installer`）是**安装引导规程**：供 AI 按需拉取执行安装，不放在 `skills/` 下、不会被安装进目标 skills 目录。
 
 另含 Claude Code 插件包（`claude-plugin/`，由 `scripts/pack-claude-plugin.sh` 组装）：打包主 skill 并附 PreToolUse hook 禁止自动 git push。
 
 ## 视觉伴侣速览
+
+### 只做 UI 设计
+
+直接说：
+
+> 用技术塔视觉伴侣完成 UI 设计：<需求>
+
+它会独立完成上下文读取、视觉方向比稿、逐屏迭代、状态补齐与 `design-spec.md` 交付，不创建 Tickets、不建仓、不实现业务代码。详见 `skills/tech-visual-companion/SKILL.md`。
+
+### 工程流水线中的视觉决策
 
 1. 主题涉及视觉问题时，用一条**独立消息**征求同意（声明额外 token 成本），拒绝则纯文本继续。
 2. 同意后启动（Claude Code / Codex 通用，脚本自动处理后台化）：
@@ -56,7 +68,7 @@ flowchart LR
 
 ## 安装
 
-本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.10.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。提供三种安装方式：
+本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.13.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。提供三种安装方式：
 
 ### 方式一：npm 一键安装（推荐，需 Node ≥ 18）
 
@@ -96,7 +108,7 @@ Windows 说明：安装用 `install.ps1`；视觉伴侣等运行时脚本在 Git
 
 每个 skill 的安装目录自包含全部材料与脚本，可整目录拷贝移植。
 
-安装后对 Agent 说「用技术塔工作流处理：<需求>」即可触发；版本与变更见 `skills/tech-workflow/SKILL.md` 版本历史，git tag 与版本号同步（`vX.Y.Z`）。
+安装后按目标选择入口：「用技术塔工作流处理：<需求>」用于工程交付；「用技术塔视觉伴侣完成 UI 设计：<需求>」用于只做设计。版本与变更见 `skills/tech-workflow/SKILL.md` 版本历史，git tag 与版本号同步（`vX.Y.Z`）。
 
 ### Claude Code 插件（v1.1.0+）
 

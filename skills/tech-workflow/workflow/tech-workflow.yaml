@@ -17,17 +17,20 @@ transitions:
     - id: intake
       label: 工单分析
       objective: |
-        结合领域文档拷问工单，弄清问题、影响范围与关键上下文。
+        在任何需求追问前，把任务首次启动时已给到的信息固化为
+        .scratch/<slug>/ticket_context.md（运行手册：docs/intake-ticket-context.md），
+        经用户确认后作为后续阶段只读的初始上下文基线。
+        再结合领域文档拷问工单，弄清问题、影响范围与关键上下文。
     - id: brainstorm
       label: 头脑风暴
       objective: |
-        通过协作对话把需求收敛为 spec 并获得用户批准。
+        先读取 ticket_context.md，再通过协作对话把需求收敛为 spec 并获得用户批准。
         涉及视觉的问题可通过浏览器视觉伴侣展示原型、图表与对比。
         权威产物：.scratch/<slug>/spec.md。
     - id: plan
       label: 技术方案
       objective: |
-        在 spec 基础上拆解实现 Tickets，并同步产出对应测试用例
+        先读取 ticket_context.md，在 spec 基础上拆解实现 Tickets，并同步产出对应测试用例
         （权威产物：.scratch/<slug>/test-cases.md，与 plan.md 同时提交审查）。
         用例与 Tickets、spec 验收标准逐条映射，按类型区分：
         unit（纯逻辑模块，build 时可用 test_generator MCP 生成骨架）/
@@ -41,14 +44,19 @@ transitions:
         1. 仓库命名与仓库根位置；2. 是否设置 local user.name/user.email；
         3. 默认分支 master/main（默认 master）；4. .gitignore 模板；5. 是否关联远程。
         完成首次提交后再开工；已在仓库内则确认分支与工作区状态后开工。
+        第一处施工改动前按 docs/build-repo-manifest.md 创建 .scratch/<slug>/repo.json，
+        为每个施工仓库记录路径、分支、remotes 与 base_commit；此时 final_commit 为 null。
         对 test-cases.md 中标记「可 MCP 骨架」的纯逻辑模块，用 test_generator MCP
         生成测试骨架，然后修正骨架（模块体系/导入路径）并按用例规格补真实断言，
         运行测试作为 ticket 验证的一部分；骨架未修正通过前不得宣称测试通过。
-        逐个 ticket 实施并完成必要验证，ticket 之间清理上下文。
+        逐个 ticket 实施并完成必要验证；每次 Ticket 提交后立即刷新 repo.json 的
+        head_commit 并追加 checkpoint，再清理 ticket 上下文。
+        build 收尾时提交剩余改动，并把各仓库当前 HEAD 写入 repo.json 的 final_commit。
     - id: review
       label: 代码审查
       objective: |
-        独立审查实现是否满足 spec 与 Tickets，识别必须修复的问题。
+        读取 ticket_context.md，独立审查实现是否偏离初始请求，并检查是否满足 spec 与 Tickets，识别必须修复的问题。
+        使用 repo.json 的 base_commit..final_commit 作为各仓库审查边界；review 产生修复提交后刷新 final_commit。
         注意：有一类问题静态审查发现不了，只能运行时暴露（组件样式隔离、
         原生胶囊/安全区几何、条件渲染的真实状态组合等，清单见
         docs/plan-test-cases.md 附录）。review 必须核对 test-cases.md 的
@@ -56,21 +64,22 @@ transitions:
     - id: pr
       label: 代码交付
       objective: |
-        代码、验证结果和交付信息已经完整提供。
+        校验 repo.json 中各仓库 final_commit 等于当前 HEAD；以 base_commit..final_commit
+        汇总代码、验证结果和交付信息。
 
   rules:
     - from: intake
       to: brainstorm
-      when: 问题、影响范围和关键上下文已经清楚，可以进入设计讨论
+      when: ticket_context.md 已写入 .scratch/<slug>/ 并获用户确认，且问题、影响范围和关键上下文已经清楚，可以进入设计讨论
     - from: brainstorm
       to: plan
-      when: spec.md 已写入 .scratch/<slug>/ 并获得用户批准；若启用过视觉伴侣，服务器已停止并清理
+      when: ticket_context.md 仍存在，spec.md 已写入 .scratch/<slug>/ 并获得用户批准；若启用过视觉伴侣，服务器已停止并清理
     - from: plan
       to: build
-      when: 实现 Tickets 拆解完成，spec、Tickets 与测试用例（test-cases.md）齐备
+      when: 实现 Tickets 拆解完成，ticket_context.md、spec、Tickets 与测试用例（test-cases.md）齐备
     - from: build
       to: review
-      when: 全部 Tickets 实施完成且必要验证通过
+      when: 全部 Tickets 实施完成且必要验证通过；repo.json 已记录所有施工仓库，base_commit 与 final_commit 均有效且本 Ticket 改动已提交
     - from: review
       to: pr
-      when: 代码审查通过，必须修复的问题已修复并复核
+      when: 代码审查通过，必须修复的问题已修复并复核；review 修复已提交，repo.json 的 final_commit 已刷新且等于各仓库当前 HEAD

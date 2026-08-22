@@ -1,0 +1,7 @@
+interface:
+  display_name: "技术塔视觉伴侣"
+  short_description: "独立完成 UI 比稿、浏览器点选、迭代和设计交付"
+  brand_color: "#5F7D5A"
+  default_prompt: "使用 $tech-visual-companion 为这个产品完成 UI 设计，只做设计，不进入开发：<需求>"
+policy:
+  allow_implicit_invocation: true

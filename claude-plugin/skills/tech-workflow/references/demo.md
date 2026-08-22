@@ -7,6 +7,8 @@
 
 | 产物 | 位置 |
 |---|---|
+| 初始上下文快照 ticket_context | `mp-entry-testcase/.scratch/mp-entry-page/ticket_context.md` |
+| 仓库施工边界 repo.json | `mp-entry-testcase/.scratch/mp-entry-page/repo.json` |
 | 设计规格 spec + 方案稿（HTML/PNG） | `mp-entry-testcase/.scratch/mp-entry-page/` |
 | 实现计划 plan（9 tickets） | 同上 `plan.md` |
 | 可运行原生小程序「一叶轻食」（30 文件） | `mp-entry-testcase/.repository/yiye-light-food/` |
@@ -23,8 +25,9 @@ flowchart LR
 
 ## Step 1 · intake 工单分析
 
+- 任何追问前先创建 `ticket_context.md`，记录用户原始一句话需求、点名的测试用途、启动工作目录、可见工程状态与当时未知项；用户确认后不再用后续设计结论覆盖它。
 - 需求只有一句话，领域拷问补齐上下文：业务设定为**本地餐饮店、单店私域**（堂食扫码 + 外卖/自提）。
-- 产出：清晰的问题定义与影响范围 → 满足进入 brainstorm 的 rule。
+- 产出：已确认的初始上下文快照 + 清晰的问题定义与影响范围 → 满足进入 brainstorm 的 rule。
 
 ## Step 2 · brainstorm 头脑风暴（视觉伴侣主场）
 
@@ -70,7 +73,11 @@ visual-companion/scripts/start-server.sh --project-dir <项目根> --open
 
 `git init -b master` + 首次提交后才动代码。
 
-**逐 ticket 实施**：30 个文件（app.json 声明 3 tab + custom-tab-bar；首页自定义导航承载店名与自提/外卖切换；mock 数据支撑全部状态演示）。
+首次提交后创建 `repo.json`：记录仓库 `.repository/yiye-light-food`、分支 `master`、空 remotes，并以首次提交 SHA 作为 `base_commit`；此时 `final_commit` 为 `null`。
+
+**逐 ticket 实施**：30 个文件（app.json 声明 3 tab + custom-tab-bar；首页自定义导航承载店名与自提/外卖切换；mock 数据支撑全部状态演示）。每个 Ticket 提交后立即刷新 `repo.json.head_commit`，并向 `checkpoints` 追加 Ticket、commit、时间和摘要，不能等 build 结束再补写。
+
+验证完成后提交全部 Ticket 改动，将当前 `HEAD` 写入 `repo.json.final_commit`，供 review 使用 `base_commit..final_commit` 精确审查。
 
 ## Step 5 · review 代码审查
 
@@ -79,6 +86,8 @@ visual-companion/scripts/start-server.sh --project-dir <项目根> --open
 1. tab 切换每次重放骨架屏 → 首次加载后缓存菜品；
 2. 领券分支无法演示 → mock 增加 `SIMULATE_NO_ORDER` 开关；
 3. 自提/外卖切换不过滤菜品 → 4 道菜标记外送不可用，首页与点单页同步过滤。
+
+修复提交并复核后刷新 `repo.json.final_commit`，确保它等于仓库当前 `HEAD`。
 
 **验证证据**（静态校验，编译≠运行时证明，DevTools 验证留给用户）：
 

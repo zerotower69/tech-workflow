@@ -1,21 +1,29 @@
 ---
 name: tech-workflow
-description: 技术塔六步工程流水线（intake→brainstorm→plan→build→review→pr）。当用户说「用技术塔工作流处理」「走技术塔流程」，或需要把一句话需求做成从分析到交付的完整工程闭环时使用。内置浏览器视觉伴侣（brainstorm 视觉决策）、git 建仓引导（build 前置）、测试用例与 test_generator MCP 集成（plan/build）、运行时回归纪律（review）。人格经 SOUL.md 注入（小塔/阿塔）；用户呼唤「小塔、阿塔，分析一下xxx，给我出个技术方案」同样触发。
+description: 技术塔六步工程执行流水线（intake→brainstorm→plan→build→review→pr）。当用户明确要走技术塔流程，或需要把需求落实为代码、测试、审查与交付的完整工程闭环时使用。内置 brainstorm 视觉决策、git 建仓引导、测试用例集成和运行时回归。只想完成 UI/UX 设计、页面原型或视觉比稿而不实现代码时，不使用本 skill，改用 tech-visual-companion。
 metadata:
   short-description: 技术塔六步流水线：视觉伴侣+建仓引导+测试集成
-  version: 1.10.0
+  version: 1.13.0
 ---
 
-# 技术塔工作流 v1.10.0
+# 技术塔工作流 v1.13.0
 
 六步流水线：intake → brainstorm → plan → build → review → pr。
 拓扑定义：`workflow/tech-workflow.yaml`；端到端示例：`demo.md`。
+
+## 与独立 UI 设计的边界
+
+- 本 skill 面向工程执行与交付。用户只说「设计 UI」「出页面方案」「用视觉伴侣比稿」，且没有要求实现代码时，改用 `tech-visual-companion`，不要启动六步流水线。
+- 用户同时要求设计与实现，或明确说「走技术塔工作流」，才在本流程的 brainstorm 阶段使用内置视觉伴侣，并继续 plan/build/review/pr。
+- 已在独立视觉伴侣中批准的 `design-spec.md` 与原型可以作为本流程 intake/brainstorm 的输入，但仍需遵守本流程的阶段门槛。
 
 ## 核心纪律（全程生效）
 
 - 一次只问一个问题，每问给默认值；用户可回字母/单词，也可「全部默认」。
 - HARD-GATE：spec 未批准不写 plan；plan 未批准不动代码。
 - 步骤完成 = 产物落盘 + 用户批准。
+- intake 启动即把首次给到的信息写入 `.scratch/<slug>/ticket_context.md`；用户确认后作为只读基线，后续阶段先读取它，不用新结论覆盖初始上下文。
+- build 在第一处施工改动前创建 `.scratch/<slug>/repo.json`，记录每个仓库的路径、分支和 base commit；施工期间随仓库/分支/每个 Ticket 提交持续补齐 head 与 checkpoints，收尾记录 final commit，review 修复提交后同步刷新。
 - 验证分层：静态校验 ≠ 运行时证明；未真实执行的验证单独声明。
 - 产物约定：工作流产物在 `.scratch/<slug>/`；代码仓库在 `.repository/` 容器目录（可容纳多个 git 仓库，自身不是仓库）。
 - 全程中文交流（强制）：解释、汇报、提问一律中文，未经用户明确指定不切换其他语言。
@@ -29,10 +37,10 @@ metadata:
 
 | 步骤 | 要点 | 手册 |
 |---|---|---|
-| intake | 结合领域文档拷问工单，弄清问题/影响范围/上下文 | — |
+| intake | 先固化首次启动信息为 ticket_context.md，再结合领域文档拷问工单 | `docs/intake-ticket-context.md` |
 | brainstorm | 视觉问题征求同意后启用视觉伴侣；收敛为 spec 并获批；原型快照需同意（告知消耗与路径） | `docs/brainstorm-visual-companion.md` |
 | plan | 拆 Tickets **同时**产出 test-cases.md（unit/integration/manual） | `docs/plan-test-cases.md` |
-| build | 先 git 环境检查与引导建仓，首次提交后才动代码；逐 ticket 实施 | `docs/build-git-bootstrap.md` |
+| build | git 底座确认后创建 repo.json；逐 Ticket 持续补齐仓库/分支/checkpoints，收尾锁定 final commit | `docs/build-git-bootstrap.md`、`docs/build-repo-manifest.md` |
 | review | 独立审查 + 核对 manual 用例真实执行；运行时专属问题清单逐条回归 | `docs/plan-test-cases.md` 附录 |
 | pr | 交付代码、验证结果与交付信息 | — |
 
@@ -48,11 +56,14 @@ visual-companion/smoke-test.sh   # 一键冒烟，无需人工交互
 
 ## 测试集成速览
 
-- plan→build 门槛：spec + Tickets + test-cases.md 齐备。
+- plan→build 门槛：ticket_context.md + spec + Tickets + test-cases.md 齐备。
 - 纯逻辑模块用 test_generator MCP 出骨架（先 `generate_tests` 预览再 `write_test_file`）；骨架是脚手架级（断言空洞/导入路径错/模块体系不匹配），必须修正后真实运行。
 
 ## 版本历史
 
+- **v1.13.0**（2026-08-23）：build 新增持续补齐的 `.scratch/<slug>/repo.json` 仓库交接清单；施工前按仓库记录路径、分支、脱离 HEAD、脱敏 remotes 与 `base_commit`，每次 Ticket 提交刷新 `head_commit` 并追加 checkpoint，build 收尾填写 `final_commit`，review 修复提交后刷新，pr 以 `base_commit..final_commit` 锁定最终交付范围。
+- **v1.12.0**（2026-08-23）：intake 新增权威启动快照 `.scratch/<slug>/ticket_context.md`，在首次追问前记录用户原始请求、给定材料、环境与初始项目状态；用户确认后保持只读，作为 brainstorm/plan/build/review 的共同上下文基线，防止长流程或上下文压缩造成初始信息丢失。
+- **v1.11.0**（2026-08-22）：新增独立 `tech-visual-companion` skill——用户只想做 UI/UX 设计时，可直接进入浏览器比稿、点选、逐屏迭代与 `design-spec.md` 交付，不再被迫进入 plan/build/review/pr；工程 skill 增加明确路由边界，安装器与 Claude 插件同步打包两个 skills。
 - **v1.10.0**（2026-08-11）：视觉伴侣会话自包含 —— 每次启动把 `frame-template.html` 与 `helper.js` 复制进会话目录（项目会话即 `<工程>/.tech-tower/brainstorm/<session-id>/` 持有一份），server 优先读会话内副本、缺失回退 skill 捆绑版；收尾纪律新增：`spec.md` 必须记录会话目录并链接原型页面副本；GUIDE/brainstorm 手册的模板引用改为可点击链接。
 - **v1.9.0**（2026-08-11）：**结构升级为多 skill 包并改名** —— skill 移入 `skills/<skill-name>/`（当前仅 tech-workflow），为后续新增 skill 预留扩展位；标识符 `tech-tower-workflow` 全面改名为 `tech-workflow`（GitHub 仓库、npm 包、skill 名、安装器同步改名，旧仓库地址自动重定向）；`installer/SKILL.md` 保持为安装引导规程，不进 `skills/`、不随安装落盘；bin 安装器与 install.sh/install.ps1 改为遍历 `skills/` 逐个镜像安装；pack/sync-version/README 路径同步更新。触发方式不变。
 - **v1.8.0**（2026-08-11）：npm 工程化 —— 新增 `npx tech-workflow` 一键安装器（`bin/tech-workflow.js`：项目/全局范围、--tool/--uninstall、镜像覆盖、`~` 下安装护栏）；新增 `.version-bump.json` + `scripts/sync-version.js` 版本位点自动同步（npm version 钩子）；install.sh/install.ps1 收紧排除清单（排除 `plugin-src/`、`archive/`、`bin/`、`package.json` 等工程产物）；README 安装文档重构为三方式并列。

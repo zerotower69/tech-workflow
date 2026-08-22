@@ -3,11 +3,13 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/skills/tech-workflow"
+VISUAL_SRC="$ROOT/skills/tech-visual-companion"
 OUT="$ROOT/claude-plugin"
 TMP="$(mktemp -d)"
 SK="$TMP/skills/tech-workflow"
+VISUAL_SK="$TMP/skills/tech-visual-companion"
 
-mkdir -p "$TMP/.claude-plugin" "$TMP/hooks" "$SK/references" "$SK/visual-companion"
+mkdir -p "$TMP/.claude-plugin" "$TMP/hooks" "$SK/references" "$SK/visual-companion" "$VISUAL_SK"
 
 cp "$ROOT/plugin-src/plugin.json" "$TMP/.claude-plugin/plugin.json"
 cp "$ROOT/plugin-src/hooks/hooks.json" "$TMP/hooks/hooks.json"
@@ -21,12 +23,17 @@ sed -e 's|`docs/|`references/|g' \
     "$SRC/SKILL.md" > "$SK/SKILL.md"
 
 cp "$SRC"/docs/*.md "$SK/references/"
-cp "$SRC/workflow/tech-workflow.yaml" "$SK/references/"
+# topology 中的手册路径也需改写为插件内 references/，否则打包后引用失效
+sed 's|docs/|references/|g' \
+    "$SRC/workflow/tech-workflow.yaml" > "$SK/references/tech-workflow.yaml"
 cp "$SRC/demo.md" "$SK/references/"
 cp "$SRC/SOUL.md" "$SK/SOUL.md"
 cp "$SRC/visual-companion/GUIDE.md" "$SK/visual-companion/"
 cp "$SRC/visual-companion/smoke-test.sh" "$SK/visual-companion/"
 cp -R "$SRC/visual-companion/scripts" "$SK/visual-companion/scripts"
+
+# 独立 UI 设计 skill（源码自包含，完整复制）
+cp -R "$VISUAL_SRC/." "$VISUAL_SK/"
 
 mkdir -p "$OUT"
 rsync -a --delete "$TMP/" "$OUT/"
