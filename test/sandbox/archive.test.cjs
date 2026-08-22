@@ -50,3 +50,14 @@ test('TC-120: 非空恢复目标被拒绝', () => {
   const target = temp(); write(path.join(target, 'keep.txt'), 'keep'); assert.throws(() => archive.restoreSandbox(out, target), { code: 'E_TARGET_NOT_EMPTY' });
   assert.equal(fs.readFileSync(path.join(target, 'keep.txt'), 'utf8'), 'keep');
 });
+
+test('TC-120: Patch 冲突清理暂存沙箱和新建仓库', () => {
+  const f = fixture({ pushed: true, dirty: true }); const out = path.join(temp(), 'demo.tws'); archive.packSandbox(f.root, out);
+  const raw = JSON.parse(zlib.gunzipSync(fs.readFileSync(out))); raw.repositories[0].patch = Buffer.from('not a git patch').toString('base64');
+  const { contentSha256: ignored, ...content } = raw;
+  raw.contentSha256 = require('crypto').createHash('sha256').update(JSON.stringify(content)).digest('hex');
+  const bad = path.join(temp(), 'conflict.tws'); fs.writeFileSync(bad, zlib.gzipSync(Buffer.from(JSON.stringify(raw))));
+  const restoredSandbox = path.join(temp(), 'sandbox'); const restoredWorkspace = temp();
+  assert.throws(() => archive.restoreSandbox(bad, restoredSandbox, { workspaceRoot: restoredWorkspace }), { code: 'E_RESTORE_CONFLICT' });
+  assert.equal(fs.existsSync(restoredSandbox), false); assert.equal(fs.existsSync(path.join(restoredWorkspace, '.repository', 'app')), false);
+});

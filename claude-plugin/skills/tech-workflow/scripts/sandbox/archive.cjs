@@ -114,52 +114,66 @@ function restoreRepository(repo, workspaceRoot, payloadRoot) {
   const relative = safeRelative(repo.path);
   if (relative === '.') fail('E_RESTORE_ROOT_REPO', `仓库 ${repo.id} 位于 workspace 根，MVP 不自动覆盖恢复；payload 已保留`);
   const cwd = inside(workspaceRoot, relative);
+  const existedBefore = fs.existsSync(cwd);
   if (fs.existsSync(cwd) && fs.readdirSync(cwd).length) fail('E_TARGET_NOT_EMPTY', `仓库恢复目标非空: ${cwd}`);
   mkdirp(path.dirname(cwd));
-  if (repo.url) {
-    const clone = runGit(workspaceRoot, ['clone', repo.url, relative], { soft: true });
-    if (clone.status !== 0) fail('E_RESTORE_CLONE', `Clone 失败: ${repo.id}`, { stderr: clone.stderr.trim() });
-  } else {
-    mkdirp(cwd); runGit(cwd, ['init']);
+  try {
+    if (repo.url) {
+      const clone = runGit(workspaceRoot, ['clone', repo.url, relative], { soft: true });
+      if (clone.status !== 0) fail('E_RESTORE_CLONE', `Clone 失败: ${repo.id}`, { stderr: clone.stderr.trim() });
+    } else {
+      mkdirp(cwd); runGit(cwd, ['init']);
+    }
+    if (repo.bundle) {
+      const bundleFile = path.join(payloadRoot, `${repo.id}.bundle`);
+      fs.writeFileSync(bundleFile, Buffer.from(repo.bundle, 'base64'));
+      const fetch = runGit(cwd, ['fetch', bundleFile, repo.head], { soft: true });
+      if (fetch.status !== 0) fail('E_RESTORE_BUNDLE', `Bundle 恢复失败: ${repo.id}`);
+    }
+    const checkout = runGit(cwd, ['checkout', '--detach', repo.head], { soft: true });
+    if (checkout.status !== 0) fail('E_RESTORE_COMMIT', `Commit 无法恢复: ${repo.id}@${repo.head}`);
+    if (repo.patch) {
+      const patchFile = path.join(payloadRoot, `${repo.id}.patch`);
+      fs.writeFileSync(patchFile, Buffer.from(repo.patch, 'base64'));
+      const apply = runGit(cwd, ['apply', '--check', patchFile], { soft: true });
+      if (apply.status !== 0) fail('E_RESTORE_CONFLICT', `Patch 与目标仓库冲突: ${repo.id}`);
+      runGit(cwd, ['apply', patchFile]);
+    }
+    for (const item of repo.untracked || []) {
+      const target = inside(cwd, item.path);
+      if (fs.existsSync(target)) fail('E_RESTORE_CONFLICT', `未跟踪文件将覆盖现有内容: ${repo.id}/${item.path}`);
+      const data = Buffer.from(item.data, 'base64');
+      if (sha256(data) !== item.sha256) fail('E_FILE_HASH', `未跟踪文件摘要不匹配: ${repo.id}/${item.path}`);
+      mkdirp(path.dirname(target)); fs.writeFileSync(target, data);
+    }
+    return { id: repo.id, status: 'restored', path: cwd, preserveEmpty: existedBefore };
+  } catch (error) {
+    try {
+      fs.rmSync(cwd, { recursive: true, force: true });
+      if (existedBefore) mkdirp(cwd);
+    } catch { /* 保留原始恢复错误 */ }
+    throw error;
   }
-  if (repo.bundle) {
-    const bundleFile = path.join(payloadRoot, `${repo.id}.bundle`);
-    fs.writeFileSync(bundleFile, Buffer.from(repo.bundle, 'base64'));
-    const fetch = runGit(cwd, ['fetch', bundleFile, repo.head], { soft: true });
-    if (fetch.status !== 0) fail('E_RESTORE_BUNDLE', `Bundle 恢复失败: ${repo.id}`);
-  }
-  const checkout = runGit(cwd, ['checkout', '--detach', repo.head], { soft: true });
-  if (checkout.status !== 0) fail('E_RESTORE_COMMIT', `Commit 无法恢复: ${repo.id}@${repo.head}`);
-  if (repo.patch) {
-    const patchFile = path.join(payloadRoot, `${repo.id}.patch`);
-    fs.writeFileSync(patchFile, Buffer.from(repo.patch, 'base64'));
-    const apply = runGit(cwd, ['apply', '--check', patchFile], { soft: true });
-    if (apply.status !== 0) fail('E_RESTORE_CONFLICT', `Patch 与目标仓库冲突: ${repo.id}`);
-    runGit(cwd, ['apply', patchFile]);
-  }
-  for (const item of repo.untracked || []) {
-    const target = inside(cwd, item.path);
-    if (fs.existsSync(target)) fail('E_RESTORE_CONFLICT', `未跟踪文件将覆盖现有内容: ${repo.id}/${item.path}`);
-    const data = Buffer.from(item.data, 'base64');
-    if (sha256(data) !== item.sha256) fail('E_FILE_HASH', `未跟踪文件摘要不匹配: ${repo.id}/${item.path}`);
-    mkdirp(path.dirname(target)); fs.writeFileSync(target, data);
-  }
-  return { id: repo.id, status: 'restored', path: cwd };
 }
 
 function restoreSandbox(archiveFile, output, options = {}) {
   const archive = readArchive(archiveFile);
-  ensureEmpty(output);
+  const finalOutput = path.resolve(output);
+  const existedBefore = fs.existsSync(finalOutput);
+  if (existedBefore && fs.readdirSync(finalOutput).length) fail('E_TARGET_NOT_EMPTY', `恢复目标非空: ${finalOutput}`);
+  const staging = `${finalOutput}.restore-${process.pid}-${Date.now()}`;
+  ensureEmpty(staging);
+  const restoredRepositories = [];
   try {
     for (const item of archive.files || []) {
-      const target = inside(output, item.path); mkdirp(path.dirname(target)); fs.writeFileSync(target, Buffer.from(item.data, 'base64'));
+      const target = inside(staging, item.path); mkdirp(path.dirname(target)); fs.writeFileSync(target, Buffer.from(item.data, 'base64'));
     }
-    if (options.workspaceRoot && fs.existsSync(path.join(output, 'repo.json'))) {
-      const repoDoc = repoDocument(output);
+    if (options.workspaceRoot && fs.existsSync(path.join(staging, 'repo.json'))) {
+      const repoDoc = repoDocument(staging);
       repoDoc.workspaceRoot = path.resolve(options.workspaceRoot);
-      atomicWrite(path.join(output, 'repo.json'), json(repoDoc));
+      atomicWrite(path.join(staging, 'repo.json'), json(repoDoc));
     }
-    const payloadRoot = path.join(output, 'payload', 'repositories'); mkdirp(payloadRoot);
+    const payloadRoot = path.join(staging, 'payload', 'repositories'); mkdirp(payloadRoot);
     const repoResults = [];
     for (const repo of archive.repositories || []) {
       payloadId(repo.id);
@@ -172,15 +186,25 @@ function restoreSandbox(archiveFile, output, options = {}) {
         const target = inside(path.join(payloadRoot, repo.id, 'untracked'), item.path);
         mkdirp(path.dirname(target)); fs.writeFileSync(target, data);
       }
-      repoResults.push(restoreRepository(repo, options.workspaceRoot, payloadRoot));
+      const restored = restoreRepository(repo, options.workspaceRoot, payloadRoot);
+      repoResults.push(restored);
+      if (restored.path) restoredRepositories.push(restored);
     }
-    regenerateHandoff(output);
-    const result = validate(output, { strict: false });
+    regenerateHandoff(staging);
+    const result = validate(staging, { strict: false });
     if (!result.ok) fail('E_RESTORE_VALIDATE', '恢复后的沙箱校验失败', result.errors);
-    return { output: path.resolve(output), sandboxId: archive.sandboxId, repositories: repoResults, warnings: result.warnings };
+    if (existedBefore) fs.rmdirSync(finalOutput);
+    fs.renameSync(staging, finalOutput);
+    return { output: finalOutput, sandboxId: archive.sandboxId, repositories: repoResults, warnings: result.warnings };
   } catch (error) {
-    error.restoreTarget = path.resolve(output);
-    try { fs.rmSync(output, { recursive: true, force: true }); } catch { /* 保留原始错误 */ }
+    error.restoreTarget = finalOutput;
+    try { fs.rmSync(staging, { recursive: true, force: true }); } catch { /* 保留原始错误 */ }
+    for (const restored of restoredRepositories.reverse()) {
+      try {
+        fs.rmSync(restored.path, { recursive: true, force: true });
+        if (restored.preserveEmpty) mkdirp(restored.path);
+      } catch { /* 保留原始错误 */ }
+    }
     throw error;
   }
 }
