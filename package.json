@@ -1,6 +1,6 @@
 {
   "name": "@kaitow/zflow",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "技术塔 skills：六步工程交付流水线，以及可独立完成 UI/UX 比稿、原型与设计交付的浏览器视觉伴侣。支持 Codex 与 Claude Code。",
   "type": "module",
   "bin": {
@@ -17,6 +17,7 @@
     "test": "node --test test/*.test.cjs test/sandbox/*.test.cjs",
     "test:unit": "node --test test/sandbox/unit.test.cjs",
     "test:integration": "node --test test/sandbox/integration.test.cjs test/sandbox/archive.test.cjs",
+    "test:link": "node scripts/test-local-link.cjs",
     "version": "node scripts/sync-version.js && git add skills/zflow/SKILL.md skills/zflow-vision/SKILL.md README.md plugin-src/plugin.json .claude-plugin/marketplace.json install.sh install.ps1"
   },
   "files": [

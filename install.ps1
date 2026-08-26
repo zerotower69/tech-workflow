@@ -28,4 +28,4 @@ Get-ChildItem -Directory $skillsDir | ForEach-Object {
     $count++
 }
 
-Write-Output "installed: $count skills → $dest (v1.14.0)"
+Write-Output "installed: $count skills → $dest (v1.15.0)"

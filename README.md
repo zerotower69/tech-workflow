@@ -79,7 +79,7 @@ flowchart LR
 
 ## 安装
 
-本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.14.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。
+本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.15.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。
 
 ### npm 一键安装（推荐，需 Node ≥ 18）
 

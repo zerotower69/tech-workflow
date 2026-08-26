@@ -8,7 +8,7 @@
       "name": "zflow",
       "source": "./claude-plugin",
       "description": "技术塔双 skill：六步工程交付流水线 + 独立 UI 设计视觉伴侣，附禁止自动 push hook",
-      "version": "1.14.0"
+      "version": "1.15.0"
     }
   ]
 }

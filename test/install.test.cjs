@@ -38,6 +38,7 @@ function skillNames(base) {
 
 test('TC-001: scoped package exposes zflow commands', () => {
   assert.equal(packageJson.name, '@kaitow/zflow');
+  assert.equal(packageJson.version, '1.15.0');
   assert.equal(packageJson.publishConfig.access, 'public');
   assert.deepEqual(packageJson.bin, {
     zflow: 'bin/zflow.js',
