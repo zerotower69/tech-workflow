@@ -50,6 +50,14 @@ test('TC-001: scoped package exposes zflow commands', () => {
   }
 });
 
+test('TC-007/009: package and README contain no installer skill prompt', () => {
+  assert.equal(packageJson.files.includes('installer/'), false);
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  assert.match(readme, /npx @kaitow\/zflow/);
+  assert.doesNotMatch(readme, /installer\/SKILL|tech-workflow-installer|AI 自动安装/);
+  assert.deepEqual(skillNames(path.join(root, 'skills')), ['zflow', 'zflow-vision']);
+});
+
 test('TC-003/005: Codex fresh install removes only exact legacy skills', t => {
   const f = fixture();
   t.after(() => fs.rmSync(f.base, { recursive: true, force: true }));

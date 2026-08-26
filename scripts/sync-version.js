@@ -69,8 +69,8 @@ apply('skills/zflow/SKILL.md', (c, f) => {
   return replaceOnce(c, /^# 技术塔工作流 v.+$/m, `# 技术塔工作流 v${version}`, f, '标题版本');
 }, 'frontmatter+标题');
 
-// 2. installer/SKILL.md：frontmatter version（安装引导规程，不进 skills/）
-apply('installer/SKILL.md', (c, f) => replaceFrontmatterVersion(c, f), 'frontmatter');
+// 2. skills/zflow-vision/SKILL.md：frontmatter version
+apply('skills/zflow-vision/SKILL.md', (c, f) => replaceFrontmatterVersion(c, f), 'frontmatter');
 
 // 3. README.md：「当前版本」行
 apply('README.md', (c, f) =>

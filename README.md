@@ -50,8 +50,6 @@ flowchart LR
 | `zflow` | `skills/zflow/SKILL.md` | 六步工程执行流水线 intake→brainstorm→plan→build→review→pr，负责代码、测试、审查与交付 |
 | `zflow-vision` | `skills/zflow-vision/SKILL.md` | 独立 UI/UX 设计闭环：浏览器比稿、点选、迭代、原型与 design-spec 交付，不自动进入开发 |
 
-`installer/SKILL.md`（`tech-workflow-installer`）是**安装引导规程**：供 AI 按需拉取执行安装，不放在 `skills/` 下、不会被安装进目标 skills 目录。
-
 另含 Claude Code 插件包（`claude-plugin/`，由 `scripts/pack-claude-plugin.sh` 组装）：打包主 skill 并附 PreToolUse hook 禁止自动 git push。
 
 ## 视觉伴侣速览
@@ -81,33 +79,27 @@ flowchart LR
 
 ## 安装
 
-本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.14.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。提供三种安装方式：
+本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.14.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。
 
-### 方式一：npm 一键安装（推荐，需 Node ≥ 18）
+### npm 一键安装（推荐，需 Node ≥ 18）
 
 ```bash
-npx tech-workflow                    # 项目级：自动检测 Codex / Claude Code 并装到当前项目
-npx tech-workflow --global           # 全局：装到用户级目录，所有项目共享
-npx tech-workflow --tool claude      # 检测不到时显式指定目标（codex / claude）
-npx tech-workflow --uninstall        # 卸载（加 --global 卸载全局安装）
+npx @kaitow/zflow                    # 项目级：自动检测 Codex / Claude Code 并装到当前项目
+npx @kaitow/zflow --global           # 全局：装到用户级目录，所有项目共享
+npx @kaitow/zflow --tool claude      # 检测不到时显式指定目标（codex / claude）
+npx @kaitow/zflow --uninstall        # 卸载（加 --global 卸载全局安装）
 ```
+
+安装由本地 Node.js 脚本直接完成，不需要把 Markdown 发给 AI，也不消耗用于理解安装步骤的对话 token。
 
 | Agent | 项目级 | 全局 |
 |---|---|---|
 | Codex | `.codex/skills/<skill-name>/` | `$CODEX_HOME/skills/<skill-name>/`（默认 `~/.codex`） |
 | Claude Code | `.claude/skills/<skill-name>/` | `~/.claude/skills/<skill-name>/` |
 
-安装为镜像覆盖（先清旧目录再整体复制，无旧版本残留）；`skills/` 下每个 skill 独立安装、互不影响。项目级安装拒绝在 `~` 下执行（防污染全局，`--force` 可解除）。未发布到 npm registry 前，可用 `npx github:zerotower69/tech-workflow` 直接从 GitHub 运行同一安装器。
+安装为镜像覆盖（先清旧目录再整体复制，无旧版本残留）；`skills/` 下每个 skill 独立安装、互不影响。升级时会精确清理旧英文名目录，避免新旧 skill 并存。项目级安装拒绝在 `~` 下执行（防污染全局，`--force` 可解除）。
 
-### 方式二：AI 自动安装
-
-把这句话原样发给你的 AI（Codex / Claude Code 等）：
-
-> 请读取 https://raw.githubusercontent.com/zerotower69/tech-workflow/main/installer/SKILL.md 并按它自动完成技术塔工作流的安装。
-
-AI 会自动检测环境与项目中已用的 Agent（Codex / Claude Code 两大 Agent），确认范围后从 GitHub 下载压缩包安装到对应 skills 目录，验证并清理；完整规程见 `installer/SKILL.md`。
-
-### 方式三：手动安装（无需 Node）
+### 手动备用安装（无需 Node）
 
 ```bash
 ./install.sh   # macOS / Linux / Git Bash：安装 skills/ 下全部 skill 到 $CODEX_HOME/skills/

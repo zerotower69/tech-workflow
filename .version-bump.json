@@ -3,7 +3,7 @@
   "source": "package.json",
   "files": [
     { "path": "skills/zflow/SKILL.md", "note": "frontmatter version + 标题版本；「版本历史」条目手工维护" },
-    { "path": "installer/SKILL.md", "note": "frontmatter version；安装引导规程，不进 skills/" },
+    { "path": "skills/zflow-vision/SKILL.md", "note": "frontmatter version" },
     { "path": "README.md", "note": "「当前版本」行" },
     { "path": "plugin-src/plugin.json", "note": "version 字段" },
     { "path": ".claude-plugin/marketplace.json", "note": "plugins.0.version" },

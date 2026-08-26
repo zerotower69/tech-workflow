@@ -17,12 +17,11 @@
     "test": "node --test test/*.test.cjs test/sandbox/*.test.cjs",
     "test:unit": "node --test test/sandbox/unit.test.cjs",
     "test:integration": "node --test test/sandbox/integration.test.cjs test/sandbox/archive.test.cjs",
-    "version": "node scripts/sync-version.js && git add skills/zflow/SKILL.md installer/SKILL.md README.md plugin-src/plugin.json .claude-plugin/marketplace.json install.sh install.ps1"
+    "version": "node scripts/sync-version.js && git add skills/zflow/SKILL.md skills/zflow-vision/SKILL.md README.md plugin-src/plugin.json .claude-plugin/marketplace.json install.sh install.ps1"
   },
   "files": [
     "bin/",
     "skills/",
-    "installer/",
     "scripts/",
     "claude-plugin/",
     "install.sh",

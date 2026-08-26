@@ -71,14 +71,14 @@ visual-companion/smoke-test.sh   # 一键冒烟，无需人工交互
 - **v1.12.0**（2026-08-23）：intake 新增权威启动快照 `.scratch/<slug>/ticket_context.md`，在首次追问前记录用户原始请求、给定材料、环境与初始项目状态；用户确认后保持只读，作为 brainstorm/plan/build/review 的共同上下文基线，防止长流程或上下文压缩造成初始信息丢失。
 - **v1.11.0**（2026-08-22）：新增独立 `tech-visual-companion` skill——用户只想做 UI/UX 设计时，可直接进入浏览器比稿、点选、逐屏迭代与 `design-spec.md` 交付，不再被迫进入 plan/build/review/pr；工程 skill 增加明确路由边界，安装器与 Claude 插件同步打包两个 skills。
 - **v1.10.0**（2026-08-11）：视觉伴侣会话自包含 —— 每次启动把 `frame-template.html` 与 `helper.js` 复制进会话目录（项目会话即 `<工程>/.tech-tower/brainstorm/<session-id>/` 持有一份），server 优先读会话内副本、缺失回退 skill 捆绑版；收尾纪律新增：`spec.md` 必须记录会话目录并链接原型页面副本；GUIDE/brainstorm 手册的模板引用改为可点击链接。
-- **v1.9.0**（2026-08-11）：**结构升级为多 skill 包并改名** —— skill 移入 `skills/<skill-name>/`（当前仅 tech-workflow），为后续新增 skill 预留扩展位；标识符 `tech-tower-workflow` 全面改名为 `tech-workflow`（GitHub 仓库、npm 包、skill 名、安装器同步改名，旧仓库地址自动重定向）；`installer/SKILL.md` 保持为安装引导规程，不进 `skills/`、不随安装落盘；bin 安装器与 install.sh/install.ps1 改为遍历 `skills/` 逐个镜像安装；pack/sync-version/README 路径同步更新。触发方式不变。
-- **v1.8.0**（2026-08-11）：npm 工程化 —— 新增 `npx tech-workflow` 一键安装器（`bin/zflow.js`：项目/全局范围、--tool/--uninstall、镜像覆盖、`~` 下安装护栏）；新增 `.version-bump.json` + `scripts/sync-version.js` 版本位点自动同步（npm version 钩子）；install.sh/install.ps1 收紧排除清单（排除 `plugin-src/`、`archive/`、`bin/`、`package.json` 等工程产物）；README 安装文档重构为三方式并列。
+- **v1.9.0**（2026-08-11）：结构升级为多 skill 包，skill 移入 `skills/<skill-name>/`，安装脚本改为遍历 `skills/` 逐个镜像安装。
+- **v1.8.0**（2026-08-11）：npm 工程化 —— 新增一键安装 CLI（项目/全局范围、--tool/--uninstall、镜像覆盖、`~` 下安装护栏）；新增 `.version-bump.json` + `scripts/sync-version.js` 版本位点自动同步。
 - **v1.7.0**（2026-08-11）：新增 `scripts/check-update.cjs` 每日首次启动更新检查（GitHub tag 对比，提示用户选择是否更新，不阻塞）。
 - **v1.6.0**（2026-08-11）：新增原型快照：`snapshot-prototype.cjs` 只截 `data-tt-screen` 区域，brainstorm 收尾前征得同意（披露 token 估算与存放路径）后执行。
 - **v1.5.2**（2026-08-11）：installer 纪律增强：不打印完整命令、禁 rm -rf 旧目录，Codex 全局直接执行随包安装脚本；全程中文交流（强制）。
 - **v1.5.1**（2026-08-11）：installer Agent 检测改为项目目录/全局目录/CLI 三层，任一命中默认选中；未检测到时不视为错误。
 - **v1.5.0**（2026-08-11）：installer 重写为分发模式（环境自检测→Codex/Claude Code 多选/项目全局确认→GitHub 压缩包解压安装→清理），不上报统计；安装包自包含可整目录拷贝，Codex 安装目录排除 claude-plugin 以避免重复 skill 扫描。
-- **v1.4.0**（2026-08-11）：新增 `installer/SKILL.md` AI 自动安装 skill（GitHub 克隆→按平台安装→验证→清理），README 提供一句话触发入口。
+- **v1.4.0**（2026-08-11）：曾引入旧式智能安装入口；该入口已在 v1.15.0 删除并由 npm 脚本取代。
 - **v1.3.0**（2026-08-11）：新增 Windows 安装入口 `install.ps1`（robocopy /MIR 等价 rsync --delete）；运行时脚本保持 Git Bash/MSYS 自动适配。
 - **v1.2.0**（2026-08-11）：产品改名技术塔，清除全部旧命名表述；SOUL.md 人格注入，小塔/阿塔触发。
 - **v1.1.0**（2026-08-11）：封装 Claude Code 插件（`claude-plugin/`），新增 PreToolUse hook 禁止自动 git push（仅用户显式要求时放行）。
