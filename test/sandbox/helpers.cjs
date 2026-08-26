@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const core = require('../../skills/tech-workflow/scripts/sandbox/core.cjs');
+const core = require('../../skills/zflow/scripts/sandbox/core.cjs');
 
 function temp(prefix = 'tech-workflow-test-') { return fs.mkdtempSync(path.join(os.tmpdir(), prefix)); }
 function write(file, content) { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, content); }

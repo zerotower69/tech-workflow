@@ -1,8 +1,8 @@
-# tech-workflow
+# Zflow
 
 「技术塔」现在包含两个边界清晰的 skill：用于代码交付的六步工程流水线，以及可单独完成 UI/UX 设计的**技术塔视觉伴侣**。只想做界面设计时，不必进入 plan、build、review 或 pr。
 
-视觉伴侣自包含于 `skills/tech-workflow/visual-companion/`，**不依赖 superpowers 插件/技能**：代码改自 superpowers 6.2.0 的 brainstorming visual companion（MIT），已改名、移除原品牌/远程 logo/遥测相关逻辑，持久化路径改为 `.tech-tower/brainstorm/`。
+视觉伴侣自包含于 `skills/zflow/visual-companion/`，**不依赖 superpowers 插件/技能**：代码改自 superpowers 6.2.0 的 brainstorming visual companion（MIT），已改名、移除原品牌/远程 logo/遥测相关逻辑，持久化路径改为 `.tech-tower/brainstorm/`。
 
 ## 流水线
 
@@ -17,13 +17,13 @@ v1.14.0 起，六步流程由可迁移沙箱内核提供机器可读状态：con
 ## 可迁移工作流沙箱
 
 ```bash
-tech-workflow-sandbox create my-ticket --root .scratch
-tech-workflow-sandbox status .scratch/my-ticket --json
-tech-workflow-sandbox validate .scratch/my-ticket --strict --json
-tech-workflow-sandbox pack .scratch/my-ticket --output my-ticket.tws
+zflow-sandbox create my-ticket --root .scratch
+zflow-sandbox status .scratch/my-ticket --json
+zflow-sandbox validate .scratch/my-ticket --strict --json
+zflow-sandbox pack .scratch/my-ticket --output my-ticket.tws
 ```
 
-`.tws` 默认只保存工作流产物与完整 Commit 引用；未推送 Commit、已跟踪未提交改动和重要未跟踪文件会分别通过 Git bundle、binary patch 和 payload 保护。恢复会拒绝摘要损坏、路径穿越、非空目标和冲突，不自动覆盖工作区。详见 `skills/tech-workflow/docs/portable-sandbox.md`。
+`.tws` 默认只保存工作流产物与完整 Commit 引用；未推送 Commit、已跟踪未提交改动和重要未跟踪文件会分别通过 Git bundle、binary patch 和 payload 保护。恢复会拒绝摘要损坏、路径穿越、非空目标和冲突，不自动覆盖工作区。详见 `skills/zflow/docs/portable-sandbox.md`。
 
 - 每步强制绑定且只执行一个工程 Skill：`grill-with-docs` / `to-spec` / `to-tickets` / `implement` / `code-review`，pr 无绑定。
 - intake 会先把任务首次启动时给到的信息固化为 `.scratch/<feature-slug>/ticket_context.md`；确认后作为后续阶段的只读上下文基线。
@@ -47,8 +47,8 @@ flowchart LR
 
 | Skill | 位置 | 说明 |
 |---|---|---|
-| `tech-workflow` | `skills/tech-workflow/SKILL.md` | 六步工程执行流水线 intake→brainstorm→plan→build→review→pr，负责代码、测试、审查与交付 |
-| `tech-visual-companion` | `skills/tech-visual-companion/SKILL.md` | 独立 UI/UX 设计闭环：浏览器比稿、点选、迭代、原型与 design-spec 交付，不自动进入开发 |
+| `zflow` | `skills/zflow/SKILL.md` | 六步工程执行流水线 intake→brainstorm→plan→build→review→pr，负责代码、测试、审查与交付 |
+| `zflow-vision` | `skills/zflow-vision/SKILL.md` | 独立 UI/UX 设计闭环：浏览器比稿、点选、迭代、原型与 design-spec 交付，不自动进入开发 |
 
 `installer/SKILL.md`（`tech-workflow-installer`）是**安装引导规程**：供 AI 按需拉取执行安装，不放在 `skills/` 下、不会被安装进目标 skills 目录。
 
@@ -62,22 +62,22 @@ flowchart LR
 
 > 用技术塔视觉伴侣完成 UI 设计：<需求>
 
-它会独立完成上下文读取、视觉方向比稿、逐屏迭代、状态补齐与 `design-spec.md` 交付，不创建 Tickets、不建仓、不实现业务代码。详见 `skills/tech-visual-companion/SKILL.md`。
+它会独立完成上下文读取、视觉方向比稿、逐屏迭代、状态补齐与 `design-spec.md` 交付，不创建 Tickets、不建仓、不实现业务代码。详见 `skills/zflow-vision/SKILL.md`。
 
 ### 工程流水线中的视觉决策
 
 1. 主题涉及视觉问题时，用一条**独立消息**征求同意（声明额外 token 成本），拒绝则纯文本继续。
 2. 同意后启动（Claude Code / Codex 通用，脚本自动处理后台化）：
    ```bash
-   skills/tech-workflow/visual-companion/scripts/start-server.sh --project-dir <项目根> --open
+   skills/zflow/visual-companion/scripts/start-server.sh --project-dir <项目根> --open
    ```
 3. 用户在返回的本地 URL 中查看原型并点选，点击事件落在会话目录的 `.events`；连接信息在 `state/server-info`。
 4. 逐问题决策浏览器还是终端，标准：**用户看到它是否比读到它更容易理解**。
-5. 退出 brainstorm 前执行 `skills/tech-workflow/visual-companion/scripts/stop-server.sh "$SCREEN_DIR"`，原型保留在 `.tech-tower/brainstorm/`。
+5. 退出 brainstorm 前执行 `skills/zflow/visual-companion/scripts/stop-server.sh "$SCREEN_DIR"`，原型保留在 `.tech-tower/brainstorm/`。
 
 收尾前可选截取原型快照（须征得同意，告知 token 估算与存放路径），只截 `data-tt-screen` app 页面区域。
 
-详见 `skills/tech-workflow/docs/brainstorm-visual-companion.md` 与 `skills/tech-workflow/visual-companion/GUIDE.md`。
+详见 `skills/zflow/docs/brainstorm-visual-companion.md` 与 `skills/zflow/visual-companion/GUIDE.md`。
 
 ## 安装
 
@@ -117,11 +117,11 @@ AI 会自动检测环境与项目中已用的 Agent（Codex / Claude Code 两大
 powershell -ExecutionPolicy Bypass -File install.ps1   # Windows：等价安装
 ```
 
-Windows 说明：安装用 `install.ps1`；视觉伴侣等运行时脚本在 Git Bash/MSYS 下已自动适配，纯 PowerShell 环境可直接 `node skills/tech-workflow/visual-companion/scripts/server.cjs` 前台启动。
+Windows 说明：安装用 `install.ps1`；视觉伴侣等运行时脚本在 Git Bash/MSYS 下已自动适配，纯 PowerShell 环境可直接 `node skills/zflow/visual-companion/scripts/server.cjs` 前台启动。
 
 每个 skill 的安装目录自包含全部材料与脚本，可整目录拷贝移植。
 
-安装后按目标选择入口：「用技术塔工作流处理：<需求>」用于工程交付；「用技术塔视觉伴侣完成 UI 设计：<需求>」用于只做设计。版本与变更见 `skills/tech-workflow/SKILL.md` 版本历史，git tag 与版本号同步（`vX.Y.Z`）。
+安装后按目标选择入口：「用技术塔工作流处理：<需求>」用于工程交付；「用技术塔视觉伴侣完成 UI 设计：<需求>」用于只做设计。版本与变更见 `skills/zflow/SKILL.md` 版本历史，git tag 与版本号同步（`vX.Y.Z`）。
 
 ### Claude Code 插件（v1.1.0+）
 
@@ -138,18 +138,18 @@ claude plugin install ./claude-plugin   # 或加入 marketplace 后安装
 一键冒烟测试（启动 → 鉴权 → 品牌渲染 → 内容页 → 模拟点击事件落盘 → 停止，无需人工交互；依赖 Node 22+ / curl / python3）：
 
 ```bash
-skills/tech-workflow/visual-companion/smoke-test.sh
+skills/zflow/visual-companion/smoke-test.sh
 ```
 
 手工测试（真实浏览器）：
 
 1. 启动服务器并自动打开浏览器：
    ```bash
-   skills/tech-workflow/visual-companion/scripts/start-server.sh --project-dir <项目根> --open
+   skills/zflow/visual-companion/scripts/start-server.sh --project-dir <项目根> --open
    ```
 2. 往会话目录的 `content/` 写任意 HTML 片段（无需 `<html>` 包裹，如 `layout.html`），页面会自动展示最新文件；选项用 `<div class="option" data-choice="a" onclick="toggleSelect(this)">` 结构。
 3. 在页面上点击选项，然后查看 `<会话目录>/state/events` 里的点击事件（JSONL，每行一个）。
-4. 停止：`skills/tech-workflow/visual-companion/scripts/stop-server.sh <会话目录>`。
+4. 停止：`skills/zflow/visual-companion/scripts/stop-server.sh <会话目录>`。
 
 注意：`/tmp`（含系统临时目录）下的会话为一次性会话，停止时清理；使用真实项目目录则原型持久化在 `.tech-tower/brainstorm/`。
 
@@ -166,7 +166,7 @@ git commit -am "feat: vX.Y.Z ..." && git tag -a vX.Y.Z -m "vX.Y.Z"   # push 需�
 
 ## 许可与来源
 
-MIT（见 `LICENSE`）。`skills/tech-workflow/visual-companion/` 改自 [superpowers](https://github.com/obra/superpowers)（Copyright (c) 2025 Jesse Vincent，MIT）的 brainstorming visual companion；保留原版权声明，改动：重命名为「技术塔视觉伴侣」、存储路径 `.superpowers/brainstorm/` → `.tech-tower/brainstorm/`、移除远程品牌图与遥测相关代码。
+MIT（见 `LICENSE`）。`skills/zflow/visual-companion/` 改自 [superpowers](https://github.com/obra/superpowers)（Copyright (c) 2025 Jesse Vincent，MIT）的 brainstorming visual companion；保留原版权声明，改动：重命名为「技术塔视觉伴侣」、存储路径 `.superpowers/brainstorm/` → `.tech-tower/brainstorm/`、移除远程品牌图与遥测相关代码。
 
 ## 注意
 

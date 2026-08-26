@@ -4,9 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const core = require('../../skills/tech-workflow/scripts/sandbox/core.cjs');
-const archive = require('../../skills/tech-workflow/scripts/sandbox/archive.cjs');
-const f = require('../../skills/tech-workflow/scripts/sandbox/filesystem.cjs');
+const core = require('../../skills/zflow/scripts/sandbox/core.cjs');
+const archive = require('../../skills/zflow/scripts/sandbox/archive.cjs');
+const f = require('../../skills/zflow/scripts/sandbox/filesystem.cjs');
 const { temp, write, approveContext, reachSpec, approveSpec, initRepo, git } = require('./helpers.cjs');
 
 test('TC-101: 创建、状态和重复校验', () => {

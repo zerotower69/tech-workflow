@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# 从 skills/tech-workflow 源文件组装 Claude Code 插件包 claude-plugin/（单一事实源，避免双份维护漂移）
+# 从 skills/zflow 源文件组装 Claude Code 插件包 claude-plugin/（单一事实源，避免双份维护漂移）
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SRC="$ROOT/skills/tech-workflow"
-VISUAL_SRC="$ROOT/skills/tech-visual-companion"
+SRC="$ROOT/skills/zflow"
+VISUAL_SRC="$ROOT/skills/zflow-vision"
 OUT="$ROOT/claude-plugin"
 TMP="$(mktemp -d)"
-SK="$TMP/skills/tech-workflow"
-VISUAL_SK="$TMP/skills/tech-visual-companion"
+SK="$TMP/skills/zflow"
+VISUAL_SK="$TMP/skills/zflow-vision"
 
 mkdir -p "$TMP/.claude-plugin" "$TMP/hooks" "$SK/references" "$SK/visual-companion" "$VISUAL_SK"
 
@@ -18,14 +18,14 @@ chmod +x "$TMP/hooks/block-auto-push.sh"
 
 # SKILL.md：把根目录路径引用改写为插件内相对路径
 sed -e 's|`docs/|`references/|g' \
-    -e 's|`workflow/tech-workflow.yaml`|`references/tech-workflow.yaml`|g' \
+    -e 's|`workflow/zflow.yaml`|`references/zflow.yaml`|g' \
     -e 's|：`demo.md`|：`references/demo.md`|g' \
     "$SRC/SKILL.md" > "$SK/SKILL.md"
 
 cp "$SRC"/docs/*.md "$SK/references/"
 # topology 中的手册路径也需改写为插件内 references/，否则打包后引用失效
 sed 's|docs/|references/|g' \
-    "$SRC/workflow/tech-workflow.yaml" > "$SK/references/tech-workflow.yaml"
+    "$SRC/workflow/zflow.yaml" > "$SK/references/zflow.yaml"
 cp "$SRC/demo.md" "$SK/references/"
 cp "$SRC/SOUL.md" "$SK/SOUL.md"
 cp -R "$SRC/scripts" "$SK/scripts"

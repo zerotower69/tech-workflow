@@ -63,8 +63,8 @@ function replaceFrontmatterVersion(content, file) {
 const jsonVersionRe = /("version"\s*:\s*")[^"]+(")/;
 const installEchoRe = /(\(v)\d+\.\d+\.\d+(\))/;
 
-// 1. skills/tech-workflow/SKILL.md：frontmatter version + 标题版本
-apply('skills/tech-workflow/SKILL.md', (c, f) => {
+// 1. skills/zflow/SKILL.md：frontmatter version + 标题版本
+apply('skills/zflow/SKILL.md', (c, f) => {
   c = replaceFrontmatterVersion(c, f);
   return replaceOnce(c, /^# 技术塔工作流 v.+$/m, `# 技术塔工作流 v${version}`, f, '标题版本');
 }, 'frontmatter+标题');

@@ -5,8 +5,8 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
-const core = require('../../skills/tech-workflow/scripts/sandbox/core.cjs');
-const archive = require('../../skills/tech-workflow/scripts/sandbox/archive.cjs');
+const core = require('../../skills/zflow/scripts/sandbox/core.cjs');
+const archive = require('../../skills/zflow/scripts/sandbox/archive.cjs');
 const { temp, write, initRepo, git } = require('./helpers.cjs');
 
 function fixture({ pushed = true, dirty = false } = {}) {

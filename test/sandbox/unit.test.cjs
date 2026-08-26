@@ -4,8 +4,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const core = require('../../skills/tech-workflow/scripts/sandbox/core.cjs');
-const f = require('../../skills/tech-workflow/scripts/sandbox/filesystem.cjs');
+const core = require('../../skills/zflow/scripts/sandbox/core.cjs');
+const f = require('../../skills/zflow/scripts/sandbox/filesystem.cjs');
 const { temp, write } = require('./helpers.cjs');
 
 test('TC-001/008: slug 与归档路径拒绝越界', () => {

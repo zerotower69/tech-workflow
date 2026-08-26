@@ -2,7 +2,7 @@
   "comment": "版本位点清单：单一事实源 = package.json；同步由 scripts/sync-version.js 执行（npm version 钩子触发，也可手工运行）",
   "source": "package.json",
   "files": [
-    { "path": "skills/tech-workflow/SKILL.md", "note": "frontmatter version + 标题版本；「版本历史」条目手工维护" },
+    { "path": "skills/zflow/SKILL.md", "note": "frontmatter version + 标题版本；「版本历史」条目手工维护" },
     { "path": "installer/SKILL.md", "note": "frontmatter version；安装引导规程，不进 skills/" },
     { "path": "README.md", "note": "「当前版本」行" },
     { "path": "plugin-src/plugin.json", "note": "version 字段" },

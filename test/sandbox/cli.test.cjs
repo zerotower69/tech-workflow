@@ -7,7 +7,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { temp } = require('./helpers.cjs');
 
-const bin = path.resolve(__dirname, '../../bin/tech-workflow-sandbox.js');
+const bin = path.resolve(__dirname, '../../bin/zflow-sandbox.js');
 
 function cli(args, cwd = temp()) { return spawnSync(process.execPath, [bin, ...args], { cwd, encoding: 'utf8' }); }
 
@@ -23,6 +23,6 @@ test('TC-201: CLI 门禁错误是结构化且不泄露堆栈', () => {
 });
 
 test('TC-121: 原安装器 help/version 仍可运行', () => {
-  const installer = path.resolve(__dirname, '../../bin/tech-workflow.js');
+  const installer = path.resolve(__dirname, '../../bin/zflow.js');
   for (const args of [['--help'], ['--version']]) { const result = spawnSync(process.execPath, [installer, ...args], { encoding: 'utf8' }); assert.equal(result.status, 0); }
 });
