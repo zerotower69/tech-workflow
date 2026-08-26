@@ -8,6 +8,13 @@ $codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME '.c
 $dest = Join-Path $codexHome 'skills'
 $skillsDir = Join-Path $src 'skills'
 
+@('tech-workflow', 'tech-visual-companion') | ForEach-Object {
+    $legacyDir = Join-Path $dest $_
+    if (Test-Path $legacyDir) {
+        Remove-Item -Recurse -Force $legacyDir
+    }
+}
+
 $count = 0
 Get-ChildItem -Directory $skillsDir | ForEach-Object {
     if (-not (Test-Path (Join-Path $_.FullName 'SKILL.md'))) { return }

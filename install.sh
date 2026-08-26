@@ -4,6 +4,12 @@
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")" && pwd)"
 DEST_BASE="${CODEX_HOME:-$HOME/.codex}/skills"
+for legacy_name in tech-workflow tech-visual-companion; do
+  legacy_dir="$DEST_BASE/$legacy_name"
+  if [ -d "$legacy_dir" ]; then
+    find "$legacy_dir" -depth -delete
+  fi
+done
 count=0
 for skill_dir in "$SRC"/skills/*/; do
   name="$(basename "$skill_dir")"

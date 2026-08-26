@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// 技术塔工作流安装器（npx tech-workflow）
+// Zflow 安装器（npx @kaitow/zflow）
 // 设计参考 superpowers-zh 的 bin 模式：零依赖 Node 脚本、TARGETS 表驱动、
 // 手写递归复制保证跨平台（含 Windows npx 缓存 junction）行为一致。
 //
@@ -20,6 +20,7 @@ const SKILLS_SRC = resolve(ROOT, 'skills');
 const PROJECT_DIR = process.cwd();
 const HOME = homedir();
 const CODEX_HOME = process.env.CODEX_HOME || join(HOME, '.codex');
+const LEGACY_SKILL_NAMES = ['tech-workflow', 'tech-visual-companion'];
 
 // 手动递归复制：跨 Node 版本和操作系统行为一致
 // 不使用 cpSync —— 在 Windows + npx 缓存（含 junction）+ 部分 Node 版本下不稳定
@@ -120,17 +121,17 @@ const TARGETS = [
 
 function usage() {
   console.log(`
-  tech-workflow v${PKG.version} — 技术塔 skills 安装器
+  zflow v${PKG.version} — 技术塔 skills 安装器
 
   用法：
-    npx tech-workflow                    项目级：自动检测 Codex / Claude Code 并装到当前项目
-    npx tech-workflow --global           全局：装到用户级目录，所有项目共享
-    npx tech-workflow --tool claude      指定目标安装（检测不到时使用）
-    npx tech-workflow --global -t codex  全局 + 指定目标
-    npx tech-workflow --uninstall        卸载项目级（加 --global 卸载全局）
-    npx tech-workflow --force            允许在用户主目录(~)做项目级安装（默认拒绝）
-    npx tech-workflow --help             显示帮助
-    npx tech-workflow --version          显示版本
+    npx @kaitow/zflow                    项目级：自动检测 Codex / Claude Code 并装到当前项目
+    npx @kaitow/zflow --global           全局：装到用户级目录，所有项目共享
+    npx @kaitow/zflow --tool claude      指定目标安装（检测不到时使用）
+    npx @kaitow/zflow --global -t codex  全局 + 指定目标
+    npx @kaitow/zflow --uninstall        卸载项目级（加 --global 卸载全局）
+    npx @kaitow/zflow --force            允许在用户主目录(~)做项目级安装（默认拒绝）
+    npx @kaitow/zflow --help             显示帮助
+    npx @kaitow/zflow --version          显示版本
 
   包含的 skills（安装时全部复制到目标 skills 目录）：
 ${scanSkills().map(s => `    - ${s.name}`).join('\n')}
@@ -152,6 +153,12 @@ ${scanSkills().map(s => `    - ${s.name}`).join('\n')}
 
 function installOne(target, isGlobal, skills) {
   const base = isGlobal ? target.globalBase : resolve(PROJECT_DIR, target.projectBase);
+  for (const legacyName of LEGACY_SKILL_NAMES) {
+    const legacyDest = join(base, legacyName);
+    if (!existsSync(legacyDest)) continue;
+    rmSync(legacyDest, { recursive: true, force: true });
+    console.log(`  ♻️  ${target.name} · 已清理旧 skill ${legacyName}`);
+  }
   for (const skill of skills) {
     const dest = join(base, skill.name);
     rmSync(dest, { recursive: true, force: true });
@@ -162,14 +169,15 @@ function installOne(target, isGlobal, skills) {
 
 function uninstallOne(target, isGlobal, skills) {
   const base = isGlobal ? target.globalBase : resolve(PROJECT_DIR, target.projectBase);
-  for (const skill of skills) {
-    const dest = join(base, skill.name);
+  const names = [...new Set([...skills.map(skill => skill.name), ...LEGACY_SKILL_NAMES])];
+  for (const name of names) {
+    const dest = join(base, name);
     if (!existsSync(dest)) {
-      console.log(`  ⏭️  ${target.name} · ${skill.name}：未安装，跳过`);
+      console.log(`  ⏭️  ${target.name} · ${name}：未安装，跳过`);
       continue;
     }
     rmSync(dest, { recursive: true, force: true });
-    console.log(`  🗑️  ${target.name} · ${skill.name}：已卸载（${dest}）`);
+    console.log(`  🗑️  ${target.name} · ${name}：已卸载（${dest}）`);
   }
 }
 
@@ -200,7 +208,7 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 
-if (flags.version) { console.log(`tech-workflow v${PKG.version}`); process.exit(0); }
+if (flags.version) { console.log(`zflow v${PKG.version}`); process.exit(0); }
 
 const skills = scanSkills();
 if (flags.help) { usage(); process.exit(0); }
@@ -223,7 +231,7 @@ function resolveTargets() {
 const targets = resolveTargets();
 if (targets.length === 0) {
   console.error(`❌ 未检测到${flags.global ? '全局' : '项目级'} Codex / Claude Code 使用痕迹。`);
-  console.error(`   请用 --tool 显式指定，例如: npx tech-workflow ${flags.global ? '--global ' : ''}--tool codex`);
+  console.error(`   请用 --tool 显式指定，例如: npx @kaitow/zflow ${flags.global ? '--global ' : ''}--tool codex`);
   process.exit(1);
 }
 
@@ -245,7 +253,7 @@ let realHome = HOME;
 try { realHome = realpathSync(HOME); } catch { /* keep */ }
 if (!flags.global && realCwd === realHome && !flags.force) {
   console.error('❌ 项目级安装不允许在用户主目录（~）下执行。');
-  console.error('   想让所有项目可用，请用全局安装: npx tech-workflow --global');
+  console.error('   想让所有项目可用，请用全局安装: npx @kaitow/zflow --global');
   console.error('   如确实要装在当前目录，请加 --force。');
   process.exit(1);
 }
