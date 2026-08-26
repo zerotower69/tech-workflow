@@ -1,0 +1,55 @@
+name: Publish npm
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish @kaitow/zflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout tagged commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node and npm registry
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Fetch default branch
+        run: git fetch --no-tags origin main:refs/remotes/origin/main
+
+      - name: Verify tag, version, main ancestry, and registry state
+        run: node scripts/verify-release.cjs --tag "$GITHUB_REF_NAME" --branch origin/main
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Verify npm link first install
+        run: npm run test:link
+
+      - name: Verify publish contents
+        run: |
+          npm pack --dry-run --json > "$RUNNER_TEMP/npm-pack.json"
+          node scripts/verify-pack.cjs "$RUNNER_TEMP/npm-pack.json"
+
+      - name: Publish public package
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

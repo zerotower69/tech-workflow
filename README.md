@@ -147,12 +147,22 @@ skills/zflow/visual-companion/smoke-test.sh
 
 ## 维护者发版流程
 
+发布由 `.github/workflows/publish-npm.yml` 在新版本 tag 推送时自动完成。普通 `main` push 和 PR merge 不会直接发包。
+
 ```bash
 npm version patch   # 或 minor / major：自动改 package.json 并同步全部版本位点（.npmrc 已禁用自动 tag）
 # 手工在 SKILL.md「版本历史」补一条 vX.Y.Z 记录
-./scripts/pack-claude-plugin.sh && ./install.sh   # 重组 Claude 插件包并同步本机全局安装
-git commit -am "feat: vX.Y.Z ..." && git tag -a vX.Y.Z -m "vX.Y.Z"   # push 需用户确认
+./scripts/pack-claude-plugin.sh
+npm test && npm run test:link
+git commit -am "release: vX.Y.Z"
+# 合并到 main 后再创建并推送完全匹配 package.json version 的 tag
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
 ```
+
+Action 会验证 tag=`v<package.version>`、tag commit 已进入 `origin/main`、registry 中不存在同版本，并在测试、link 首装和 pack 内容校验全部通过后执行 `npm publish --access public`。任何校验失败都不会发布。
+
+首次发布前，在 GitHub Actions repository secrets 中配置 `NPM_TOKEN`：使用可发布 `@kaitow` scope、Read and write、开启 bypass 2FA 的 npm granular token。不要把 token 写入仓库或 `.npmrc`。首次发布成功后，在 npm 包设置中把 Trusted Publisher 绑定到仓库 `zerotower69/tech-workflow` 和 workflow `publish-npm.yml`；OIDC 验证成功后删除 `NPM_TOKEN`。
 
 版本位点清单见 `.version-bump.json`；同步脚本 `scripts/sync-version.js` 可单独运行做校验。
 
