@@ -162,7 +162,17 @@ git push origin vX.Y.Z
 
 Action 会验证 tag=`v<package.version>`、tag commit 已进入 `origin/main`、registry 中不存在同版本，并在测试、link 首装和 pack 内容校验全部通过后执行 `npm publish --access public`。任何校验失败都不会发布。
 
-首次发布前，在 GitHub Actions repository secrets 中配置 `NPM_TOKEN`：使用可发布 `@kaitow` scope、Read and write、开启 bypass 2FA 的 npm granular token。不要把 token 写入仓库或 `.npmrc`。首次发布成功后，在 npm 包设置中把 Trusted Publisher 绑定到仓库 `zerotower69/tech-workflow` 和 workflow `publish-npm.yml`；OIDC 验证成功后删除 `NPM_TOKEN`。
+GitHub Actions 使用 npm Trusted Publishing（OIDC），不读取 `NPM_TOKEN`。包已经存在后，在 npm 包设置的 Trusted Publisher 中绑定 GitHub Actions：owner `zerotower69`、repository `tech-workflow`、workflow `publish-npm.yml`，environment 留空，并只允许 `npm publish`。仓库 workflow 已提供 `id-token: write`，使用 GitHub-hosted runner、Node 24 与支持 OIDC 的 npm。
+
+全新包在 npmjs 上还没有设置页，第一次发布必须先在维护者本机交互完成一次：
+
+```bash
+npm login --registry=https://registry.npmjs.org
+npm whoami --registry=https://registry.npmjs.org
+npm publish --access public
+```
+
+浏览器/OTP 只发生在这次本机首发。首发成功后立即配置上述 Trusted Publisher；从下一个新版本 tag 开始由 Action 通过 OIDC 发布。如果仓库曾创建 `NPM_TOKEN`，可在确认 workflow 不再引用后删除它。已存在的 npm 版本不可覆盖，首发成功后不要重跑同版本发布 job。
 
 版本位点清单见 `.version-bump.json`；同步脚本 `scripts/sync-version.js` 可单独运行做校验。
 

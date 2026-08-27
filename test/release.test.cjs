@@ -54,14 +54,14 @@ test('TC-R03: registry 仅 E404 视为可发布', () => {
   assert.equal(classifyRegistryResult({ status: 1, stdout: '', stderr: 'ECONNRESET' }), 'error');
 });
 
-test('TC-R04/R05: workflow 仅 tag 触发且权限、顺序、secret 正确', () => {
+test('TC-R04/R05: workflow 仅 tag 触发且使用 OIDC、顺序正确', () => {
   const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'publish-npm.yml'), 'utf8');
   assert.match(workflow, /tags:\s*\n\s*- ['"]v\*\.\*\.\*['"]/);
   assert.doesNotMatch(workflow, /branches:/);
   assert.match(workflow, /contents:\s*read/);
   assert.match(workflow, /id-token:\s*write/);
   assert.match(workflow, /node-version:\s*['"]24['"]/);
-  assert.match(workflow, /secrets\.NPM_TOKEN/);
+  assert.doesNotMatch(workflow, /secrets\.NPM_TOKEN|NODE_AUTH_TOKEN/);
   assert.doesNotMatch(workflow, /npm_[A-Za-z0-9]{20,}/);
   const verifyIndex = workflow.indexOf('verify-release.cjs');
   const testIndex = workflow.indexOf('npm test');
