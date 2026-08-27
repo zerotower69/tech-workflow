@@ -6,9 +6,7 @@
     { "path": "skills/zflow-vision/SKILL.md", "note": "frontmatter version" },
     { "path": "README.md", "note": "「当前版本」行" },
     { "path": "plugin-src/plugin.json", "note": "version 字段" },
-    { "path": ".claude-plugin/marketplace.json", "note": "plugins.0.version" },
-    { "path": "install.sh", "note": "installed echo 版本" },
-    { "path": "install.ps1", "note": "installed output 版本" }
+    { "path": ".claude-plugin/marketplace.json", "note": "plugins.0.version" }
   ],
   "audit": {
     "exclude": [

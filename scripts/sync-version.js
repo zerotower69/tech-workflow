@@ -67,7 +67,6 @@ function replaceFrontmatterVersion(content, file) {
 }
 
 const jsonVersionRe = /("version"\s*:\s*")[^"]+(")/;
-const installEchoRe = /(\(v)\d+\.\d+\.\d+(\))/;
 
 // 1. skills/zflow/SKILL.md：frontmatter version + 标题版本
 apply('skills/zflow/SKILL.md', (c, f) => {
@@ -92,14 +91,6 @@ apply('plugin-src/plugin.json', (c, f) =>
 apply('.claude-plugin/marketplace.json', (c, f) =>
   replaceOnce(c, jsonVersionRe, (m, p1, p2) => p1 + version + p2, f, 'plugins.0.version'),
 'plugins.0.version');
-
-// 6/7. install.sh / install.ps1 的 installed 提示
-apply('install.sh', (c, f) =>
-  replaceOnce(c, installEchoRe, (m, p1, p2) => p1 + version + p2, f, 'installed echo'),
-'installed echo');
-apply('install.ps1', (c, f) =>
-  replaceOnce(c, installEchoRe, (m, p1, p2) => p1 + version + p2, f, 'installed output'),
-'installed output');
 
 console.log(`✅ 版本已同步到 v${version}：`);
 for (const item of changed) console.log(`   - ${item}`);

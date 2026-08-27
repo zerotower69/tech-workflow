@@ -79,38 +79,26 @@ flowchart LR
 
 ## 安装
 
-本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.19.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。
+本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.19.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex、Claude Code 等 Skills CLI 兼容 Agent。
 
-### npm 一键安装（推荐，需 Node ≥ 18）
-
-```bash
-npx @kaitow/zflow                    # 项目级：自动检测目标，显示安装计划并询问确认
-npx @kaitow/zflow --global           # 全局：装到用户级目录，所有项目共享
-npx @kaitow/zflow --tool claude      # 检测不到时显式指定目标（codex / claude）
-npx @kaitow/zflow --uninstall        # 卸载（加 --global 卸载全局安装）
-npx @kaitow/zflow --yes --tool codex # 已明确授权的自动化：跳过交互确认
-```
-
-安装由本地 Node.js 脚本直接完成，不需要把 Markdown 发给 AI，也不消耗用于理解安装步骤的对话 token。视觉伴侣的内置导出也避免了每次临时生成脚本或重复读图。
-
-| Agent | 项目级 | 全局 |
-|---|---|---|
-| Codex | `.codex/skills/<skill-name>/` | `$CODEX_HOME/skills/<skill-name>/`（默认 `~/.codex`） |
-| Claude Code | `.claude/skills/<skill-name>/` | `~/.claude/skills/<skill-name>/` |
-
-安装器在写入前会显示安装范围、目标工具与实际目录，并要求输入 `y` 确认；直接回车会取消。非交互环境默认拒绝写入，只有显式传入 `--yes` 才执行。确认后采用镜像覆盖（先清旧目录再整体复制，无旧版本残留）；`skills/` 下每个 skill 独立安装、互不影响。升级时会精确清理旧英文名目录，避免新旧 skill 并存。项目级安装拒绝在 `~` 下执行（防污染全局，`--force` 可解除）。
-
-### 手动备用安装（无需 Node）
+### Skills CLI 标准安装（推荐，需 Node ≥ 18）
 
 ```bash
-./install.sh   # macOS / Linux / Git Bash：安装 skills/ 下全部 skill 到 $CODEX_HOME/skills/
+npx skills add zerotower69/tech-workflow
 ```
 
-```powershell
-powershell -ExecutionPolicy Bypass -File install.ps1   # Windows：等价安装
+这是主流 Skills CLI 的交互式安装入口：命令行会让用户选择 skill、目标 Agent 和安装范围，然后确认写入。仓库没有自定义安装器，也不会先把某个 Markdown 识别并安装成“安装 skill”。
+
+按需选择或用于自动化：
+
+```bash
+npx skills add zerotower69/tech-workflow --skill zflow
+npx skills add zerotower69/tech-workflow --skill zflow-vision
+npx skills add zerotower69/tech-workflow --global
+npx skills add zerotower69/tech-workflow --skill '*' --agent codex claude-code --global --yes
 ```
 
-Windows 说明：安装用 `install.ps1`；视觉伴侣等运行时脚本在 Git Bash/MSYS 下已自动适配，纯 PowerShell 环境可直接 `node skills/zflow/visual-companion/scripts/server.cjs` 前台启动。
+默认安装到项目统一目录 `.agents/skills/`；`--global` 安装到用户级目录。`--yes` 只用于 CI 或用户已明确授权的非交互安装。若不希望 Skills CLI 发送匿名使用统计，可设置 `DISABLE_TELEMETRY=1`。
 
 每个 skill 的安装目录自包含全部材料与脚本，可整目录拷贝移植。
 
@@ -151,14 +139,14 @@ skills/zflow/visual-companion/smoke-test.sh
 发布由 `.github/workflows/publish-npm.yml` 在新版本 tag 推送时自动完成。普通 `main` push 和 PR merge 不会直接发包。
 
 ```bash
-npm test && npm run test:link
+npm test && npm run test:skills
 git push origin main
 # tag 是发布版本的唯一来源；无需手改 package.json
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-Action 从 `v<semver>` tag 解析版本，在 Runner 内自动更新 `package.json`、两个 skill、插件清单和安装提示版本，重建 Claude 插件后再执行测试、link 首装、pack 内容校验与发布。仓库中的旧版本号不会限制发布版本，也不会由 Action 反向提交代码。
+Action 从 `v<semver>` tag 解析版本，在 Runner 内自动更新 `package.json`、两个 skill 和插件清单，重建 Claude 插件后再执行测试、Skills CLI 标准首装、pack 内容校验与发布。仓库中的旧版本号不会限制发布版本，也不会由 Action 反向提交代码。
 
 tag 遵循 SemVer 2.0.0，例如正式版 `v1.17.0`、预发布版 `v2.0.0-rc.1`、带构建元数据的 `v1.17.0+build.3`；非法前导零会被拒绝。正式版发布到 npm `latest`，预发布版发布到 `next`。tag commit 必须已进入 `origin/main`，且 registry 中不得存在同版本；任何校验失败都不会发布。
 

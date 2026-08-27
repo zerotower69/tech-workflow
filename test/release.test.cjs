@@ -85,12 +85,12 @@ test('TC-R04/R05: workflow 仅 tag 触发且使用 OIDC、顺序正确', () => {
   const verifyIndex = workflow.indexOf('verify-release.cjs');
   const applyIndex = workflow.indexOf('apply-release-version.cjs');
   const testIndex = workflow.indexOf('npm test');
-  const linkIndex = workflow.indexOf('npm run test:link');
+  const skillsIndex = workflow.indexOf('npm run test:skills');
   const packIndex = workflow.indexOf('verify-pack.cjs');
   const publishIndex = workflow.indexOf('npm publish --access public');
   assert.ok(verifyIndex >= 0 && verifyIndex < applyIndex);
   assert.ok(applyIndex < testIndex);
-  assert.ok(testIndex < linkIndex && linkIndex < packIndex && packIndex < publishIndex);
+  assert.ok(testIndex < skillsIndex && skillsIndex < packIndex && packIndex < publishIndex);
   assert.match(workflow, /npm publish --access public --tag "\$\{\{ steps\.release\.outputs\.npm_tag \}\}"/);
 });
 

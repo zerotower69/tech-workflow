@@ -48,8 +48,8 @@ jobs:
       - name: Run automated tests
         run: npm test
 
-      - name: Verify npm link first install
-        run: npm run test:link
+      - name: Verify standard skills CLI first install
+        run: npm run test:skills
 
       - name: Verify publish contents
         run: |

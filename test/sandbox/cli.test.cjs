@@ -21,8 +21,3 @@ test('TC-201: CLI 门禁错误是结构化且不泄露堆栈', () => {
   const cwd = temp(); cli(['create', 'demo', '--root', cwd], cwd); const result = cli(['transition', 'plan', path.join(cwd, 'demo')], cwd);
   assert.equal(result.status, 1); const error = JSON.parse(result.stderr); assert.equal(error.code, 'E_TRANSITION'); assert.doesNotMatch(result.stderr, /at .*\.cjs:/);
 });
-
-test('TC-121: 原安装器 help/version 仍可运行', () => {
-  const installer = path.resolve(__dirname, '../../bin/zflow.js');
-  for (const args of [['--help'], ['--version']]) { const result = spawnSync(process.execPath, [installer, ...args], { encoding: 'utf8' }); assert.equal(result.status, 0); }
-});
