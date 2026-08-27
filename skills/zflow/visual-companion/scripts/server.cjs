@@ -572,6 +572,8 @@ function handleRequest(req, res) {
     });
   } else if (req.method === 'GET' && pathname === '/api/session-stats') {
     jsonResponse(res, sessionStats());
+  } else if (req.method === 'POST' && pathname === '/api/export-site') {
+    exportDesignSite(res);
   } else if (req.method === 'GET' && pathname === '/assets/html-to-image.js') {
     const vendorPath = path.join(__dirname, 'vendor', 'html-to-image.js');
     if (!fs.existsSync(vendorPath)) {
@@ -620,6 +622,7 @@ function handleRequest(req, res) {
 // ========== WebSocket Connection Handling ==========
 
 const clients = new Set();
+const designSiteProcesses = new Set();
 
 function handleUpgrade(req, socket) {
   if (!isAuthorized(req) || !isAllowedWebSocketOrigin(req)) { socket.destroy(); return; }
@@ -707,6 +710,48 @@ function broadcast(msg) {
   for (const socket of clients) {
     try { socket.write(frame); } catch (e) { clients.delete(socket); }
   }
+}
+
+function exportDesignSite(res) {
+  const childProcess = require('node:child_process');
+  const exporter = path.join(__dirname, 'export-design-site.cjs');
+  const child = childProcess.spawn(process.execPath, [
+    exporter, '--session-dir', SESSION_DIR, '--serve', '--port', '0'
+  ], { stdio: ['ignore', 'pipe', 'pipe'] });
+  designSiteProcesses.add(child);
+  let stdout = '';
+  let stderr = '';
+  let settled = false;
+  const timeout = setTimeout(() => finish(new Error('全量站点导出超时')), 20000);
+
+  function finish(error, payload) {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeout);
+    if (error) {
+      try { child.kill(); } catch (killError) {}
+      designSiteProcesses.delete(child);
+      recordAnalytics({ type: 'export_site', format: 'site', status: 'error', error: error.message }, 'server');
+      jsonResponse(res, { status: 'error', error: error.message }, 500);
+      return;
+    }
+    recordAnalytics({ type: 'export_site', format: 'site', status: 'ok' }, 'server');
+    jsonResponse(res, payload);
+  }
+
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk.toString();
+    const newline = stdout.indexOf('\n');
+    if (newline < 0) return;
+    try { finish(null, JSON.parse(stdout.slice(0, newline))); }
+    catch (error) { finish(new Error('导出器返回了无效结果')); }
+  });
+  child.stderr.on('data', (chunk) => { stderr += chunk.toString().slice(0, 4000); });
+  child.on('error', (error) => finish(error));
+  child.on('exit', (code) => {
+    designSiteProcesses.delete(child);
+    if (!settled) finish(new Error(stderr.trim() || `导出器提前退出 (${code})`));
+  });
 }
 
 // Best-effort: open the user's browser the first time a screen is actually ready
@@ -816,6 +861,10 @@ function startServer() {
     for (const socket of clients) {
       try { socket.destroy(); } catch (e) { /* already gone */ }
     }
+    for (const child of designSiteProcesses) {
+      try { child.kill(); } catch (e) { /* already gone */ }
+    }
+    designSiteProcesses.clear();
     server.close(() => process.exit(0));
   }
 

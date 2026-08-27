@@ -1,6 +1,6 @@
 {
   "name": "@kaitow/zflow",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "description": "技术塔 skills：六步工程交付流水线，以及可独立完成 UI/UX 比稿、原型与设计交付的浏览器视觉伴侣。支持 Codex 与 Claude Code。",
   "type": "module",
   "bin": {
@@ -23,8 +23,11 @@
   },
   "devDependencies": {
     "esbuild": "0.28.2",
+    "express": "5.2.1",
     "gpt-tokenizer": "4.0.0",
-    "html-to-image": "1.11.13"
+    "html-to-image": "1.11.13",
+    "marked": "15.0.12",
+    "xss": "1.0.15"
   },
   "files": [
     "bin/",

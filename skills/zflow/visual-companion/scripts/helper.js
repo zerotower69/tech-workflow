@@ -187,6 +187,29 @@
     toast('HTML 已导出');
   }
 
+  async function exportAllSite(container) {
+    container.innerHTML = '<div class="tt-view-head"><strong>导出所有</strong></div><p class="tt-hint">正在生成页面索引、独立 HTML、设计决策与 Express 预览站点…</p>';
+    const response = await fetch('/api/export-site', { method: 'POST' });
+    const result = await response.json();
+    if (!response.ok || result.status !== 'ok') throw new Error(result.error || '全量导出失败');
+    container.innerHTML = '<div class="tt-view-head"><strong>全量站点已生成</strong></div>';
+    const summary = document.createElement('div');
+    summary.className = 'tt-site-result';
+    const counts = document.createElement('p');
+    counts.textContent = `${result.pages} 个页面 · ${result.decisions} 份设计决策 · ${result.analyticsEvents} 条分析事件`;
+    const output = document.createElement('code');
+    output.textContent = result.path;
+    const link = document.createElement('a');
+    link.href = result.server.url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = '打开设计交付站 ↗';
+    summary.append(counts, output, link);
+    container.appendChild(summary);
+    sendEvent({ type: 'export_site_requested', format: 'site', plugin: 'export-site', status: 'ok' });
+    toast('全量设计站点已生成');
+  }
+
   function collectColors() {
     const counts = new Map();
     const add = (value) => {
@@ -303,6 +326,7 @@
       .tt-swatches{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}.tt-swatch{border:1px solid #e2e2e6;background:white;border-radius:9px;padding:6px;display:grid;grid-template-columns:22px 1fr auto;gap:6px;align-items:center;text-align:left;cursor:pointer}.tt-swatch i{width:22px;height:22px;border-radius:6px;background:var(--swatch);border:1px solid rgba(0,0,0,.12)}.tt-swatch small{color:#999}
       .tt-page-list{display:grid;gap:5px}.tt-page-item{border:1px solid #e2e2e6;background:white;border-radius:9px;padding:7px;display:grid;grid-template-columns:24px 1fr;align-items:center;text-align:left;cursor:pointer}.tt-page-item span{width:22px;height:22px;display:grid;place-items:center;border-radius:6px;background:#eeeef2;color:#666}.tt-page-item b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tt-page-item.active{border-color:#5577ef;background:#f2f5ff}
       .tt-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.tt-stat-grid div{background:#f5f5f7;border-radius:10px;padding:10px}.tt-stat-grid b,.tt-stat-grid span{display:block}.tt-stat-grid b{font-size:18px}.tt-stat-grid span{font-size:11px;color:#6f6f76;margin-top:3px}.tt-hint{font-size:11px;color:#777;margin:9px 2px 0}
+      .tt-site-result{display:grid;gap:9px}.tt-site-result p{margin:0;color:#5f6678}.tt-site-result code{display:block;overflow:auto;background:#f2f3f7;border-radius:8px;padding:8px;font-size:10px}.tt-site-result a{display:block;text-align:center;text-decoration:none;background:#5368f5;color:#fff;border-radius:9px;padding:8px;font-weight:650}
       #tt-tool-toast{position:fixed;left:50%;bottom:24px;z-index:2147483647;transform:translate(-50%,12px);opacity:0;background:#18181b;color:#fff;border-radius:999px;padding:9px 14px;font:13px system-ui;pointer-events:none;transition:.16s}#tt-tool-toast.show{opacity:1;transform:translate(-50%,0)}
       @media(prefers-color-scheme:dark){#tt-tool-panel{background:rgba(28,28,31,.96);color:#f5f5f7;border-color:#46464d}.tt-plugin,.tt-swatch,.tt-page-item,.tt-view-head button{background:#35353a;color:#f5f5f7;border-color:#4b4b52}.tt-plugin:hover{background:#414148}.tt-stat-grid div{background:#35353a}.tt-hint,.tt-stat-grid span{color:#aaa}.tt-page-item.active{background:#26335a;border-color:#6d8cff}#tt-tool-content{border-color:#46464d}}
     `;
@@ -405,6 +429,7 @@
     registerPlugin({ id: 'pages', label: '页面', icon: '▤', order: 10, render: renderPagesPlugin });
     registerPlugin({ id: 'export-image', label: '导出 PNG', icon: '▧', order: 20, run: exportPng });
     registerPlugin({ id: 'export-html', label: '导出 HTML', icon: '</>', order: 30, run: exportStandaloneHtml });
+    registerPlugin({ id: 'export-site', label: '导出所有', icon: '▦', order: 35, render: exportAllSite });
     registerPlugin({ id: 'color-picker', label: '取色器', icon: '◉', order: 40, render: renderColorPlugin });
     registerPlugin({ id: 'session-stats', label: 'Token', icon: '≈', order: 50, render: renderStatsPlugin });
   }

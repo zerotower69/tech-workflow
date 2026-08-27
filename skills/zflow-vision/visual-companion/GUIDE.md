@@ -299,6 +299,8 @@ Opening it exposes these built-ins:
 - **导出 PNG** — browser-side export of only the app-page region.
 - **导出 HTML** — one standalone HTML file per screen; local `/files/*` image,
   font, CSS, and script references are embedded as data URLs where possible.
+- **导出所有** — package every screen, design-decision document, and a privacy-
+  preserving analytics summary into a portable Express-powered review site.
 - **取色器** — frequently used reference colors plus the browser `EyeDropper`
   pixel picker, with computed-style element picking as a fallback.
 - **Token** — visual-session estimate, exact provider usage when supplied, screen
@@ -323,6 +325,47 @@ window.addEventListener('tech-tower:ready', ({ detail: api }) => {
 
 Plugins may provide `render(container, api)` for a panel view or `run(api)` for
 an immediate action. Registration returns an unregister function.
+
+## Export All as a Design Review Site
+
+The floating-ball **导出所有** plugin builds and opens a complete local review
+site. The same operation is available as a reusable script for automation:
+
+```bash
+node visual-companion/scripts/export-design-site.cjs \
+  --session-dir <会话目录> \
+  --out <导出目录> \
+  --title "项目设计评审" \
+  --serve --open
+```
+
+`--out` is optional. Without it, the export is written under
+`<会话目录>/exports/design-site-<timestamp>-<pid>/`. Use `--host` and `--port`
+to override the loopback-only `127.0.0.1:4173` default; port `0` selects a free
+port. An existing non-empty output is never overwritten unless `--clean` is
+given, and cleanup is limited to directories carrying this exporter's marker.
+
+The generated directory is self-contained and can be copied elsewhere:
+
+```text
+design-site-…/
+├── public/
+│   ├── index.html
+│   ├── pages/*.html
+│   ├── decisions/*.md
+│   ├── data/analytics-summary.json
+│   └── site-manifest.json
+├── _runtime/express.cjs
+├── serve.cjs
+└── README.md
+```
+
+Start it later with `node serve.cjs --open`. The server exposes the static site
+under a randomized preview path and defaults to loopback. Design decisions are
+loaded from `design-spec.md`, `design-decisions.md`, `decisions.md`, or
+`spec.md`; Markdown is rendered with `marked` and sanitized with `xss`. Only
+aggregated analytics counts are exported—raw event rows and page interaction
+text remain in the original session.
 
 ## Token Accounting and Analytics
 

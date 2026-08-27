@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-// Bundle the two mature npm libraries used by the visual companion so copied
-// skills stay offline-capable and do not need their own node_modules tree.
+// Bundle mature npm libraries used by the visual companion so copied skills
+// and exported sites stay offline-capable without their own node_modules tree.
 const fs = require('node:fs');
 const path = require('node:path');
 const esbuild = require('esbuild');
@@ -22,6 +22,7 @@ Promise.all([
     platform: 'browser',
     target: ['chrome100', 'edge100', 'firefox100', 'safari15.4'],
     legalComments: 'none',
+    metafile: true,
   }),
   esbuild.build({
     stdin: {
@@ -37,12 +38,75 @@ Promise.all([
     platform: 'node',
     target: ['node18'],
     legalComments: 'none',
+    metafile: true,
   }),
-]).then(() => {
-  const notices = [
-    ['html-to-image 1.11.13', 'https://github.com/bubkoo/html-to-image', path.join(root, 'node_modules/html-to-image/LICENSE')],
-    ['gpt-tokenizer 4.0.0', 'https://github.com/niieani/gpt-tokenizer', path.join(root, 'node_modules/gpt-tokenizer/LICENSE')],
-  ].map(([name, url, license]) => `${name}\n${url}\n\n${fs.readFileSync(license, 'utf8').trim()}`);
+  esbuild.build({
+    entryPoints: [require.resolve('express')],
+    outfile: path.join(outDir, 'express.cjs'),
+    bundle: true,
+    format: 'cjs',
+    minify: true,
+    platform: 'node',
+    target: ['node18'],
+    legalComments: 'none',
+    metafile: true,
+  }),
+  esbuild.build({
+    stdin: {
+      contents: `
+        const { marked } = require('marked');
+        const xss = require('xss');
+        function renderMarkdown(value) {
+          const rendered = marked.parse(String(value || ''), { gfm: true });
+          return xss(rendered, {
+            whiteList: {
+              ...xss.whiteList,
+              a: ['href', 'name', 'title', 'target', 'rel'],
+              img: ['src', 'alt', 'title'],
+              code: ['class']
+            }
+          });
+        }
+        module.exports = { renderMarkdown };
+      `,
+      resolveDir: root,
+      sourcefile: 'markdown-entry.cjs',
+      loader: 'js',
+    },
+    outfile: path.join(outDir, 'markdown.cjs'),
+    bundle: true,
+    format: 'cjs',
+    minify: true,
+    platform: 'node',
+    target: ['node18'],
+    legalComments: 'none',
+    metafile: true,
+  }),
+]).then((builds) => {
+  const packageRoots = new Set();
+  for (const build of builds) {
+    for (const input of Object.keys(build.metafile.inputs)) {
+      let directory = path.dirname(path.resolve(root, input));
+      while (directory.startsWith(path.join(root, 'node_modules') + path.sep)) {
+        if (fs.existsSync(path.join(directory, 'package.json'))) {
+          packageRoots.add(directory);
+          break;
+        }
+        const parent = path.dirname(directory);
+        if (parent === directory) break;
+        directory = parent;
+      }
+    }
+  }
+  const notices = [...packageRoots].map((packageRoot) => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8'));
+    const licenseFile = fs.readdirSync(packageRoot).find((name) => /^licen[cs]e(?:\.|$)/i.test(name));
+    const license = licenseFile
+      ? fs.readFileSync(path.join(packageRoot, licenseFile), 'utf8').trim()
+      : `License declared by package: ${manifest.license || 'unknown'}`;
+    const url = manifest.repository && (typeof manifest.repository === 'string' ? manifest.repository : manifest.repository.url);
+    return `${manifest.name} ${manifest.version}\n${url || manifest.homepage || ''}\n\n${license}`;
+  }).sort();
   fs.writeFileSync(path.join(outDir, 'THIRD_PARTY_NOTICES.txt'), [
     'Generated bundles are rebuilt with: npm run build:companion-vendor',
     '',
