@@ -30,6 +30,13 @@ The server watches a directory for HTML files and serves the newest one to the b
 
 **Content fragments vs full documents:** If your HTML file starts with `<!DOCTYPE` or `<html`, the server serves it as-is (just injects the helper script). Otherwise, the server automatically wraps your content in the frame template — adding the header, CSS theme, connection status, and all interactive infrastructure. **Write content fragments by default.** Only write full documents when you need complete control over the page.
 
+The companion bundles two mature npm libraries into the skill so sessions work
+offline after installation: `html-to-image` powers one-click PNG export and
+`gpt-tokenizer` estimates visual-session tokens with the `o200k_base` encoding.
+Agents should use the built-in tools instead of generating per-export scripts or
+re-reading screenshots merely to save them; this keeps repeated prompt/token
+overhead low.
+
 ## Starting a Session
 
 ```bash
@@ -101,6 +108,20 @@ scripts/start-server.sh \
 ```
 
 Use `--url-host` to control what hostname is printed in the returned URL JSON.
+
+Optional privacy-filtered analytics reporting is opt-in. Local analytics is
+always written, while remote reporting happens only when an endpoint is supplied:
+
+```bash
+scripts/start-server.sh \
+  --project-dir /path/to/project \
+  --analytics-endpoint https://analytics.example.com/visual-events \
+  --analytics-project my-project
+```
+
+The remote payload excludes page HTML, clicked text, the session key, file paths,
+and design assets. Do not put credentials in the endpoint URL; place an
+authenticated same-machine collector in front when authentication is required.
 
 ## The Loop
 
@@ -267,6 +288,70 @@ When the user clicks options in the browser, their interactions are recorded to 
 The full event stream shows the user's exploration path — they may click multiple options before settling. The last `choice` event is typically the final selection, but the pattern of clicks can reveal hesitation or preferences worth asking about.
 
 If `$STATE_DIR/events` doesn't exist, the user didn't interact with the browser — use only their terminal text.
+
+## Floating Tool Plugins
+
+Every page gets a collapsed `TT` floating ball. It can be dragged and docks to
+either side, stays outside `data-tt-screen`, and is excluded from PNG exports.
+Opening it exposes these built-ins:
+
+- **页面** — visit any individual semantic HTML screen in the session.
+- **导出 PNG** — browser-side export of only the app-page region.
+- **导出 HTML** — one standalone HTML file per screen; local `/files/*` image,
+  font, CSS, and script references are embedded as data URLs where possible.
+- **取色器** — frequently used reference colors plus the browser `EyeDropper`
+  pixel picker, with computed-style element picking as a fallback.
+- **Token** — visual-session estimate, exact provider usage when supplied, screen
+  count, and analytics-event count.
+
+Add tools without editing the floating-ball shell. A page script can register a
+plugin after the ready event:
+
+```js
+window.addEventListener('tech-tower:ready', ({ detail: api }) => {
+  api.plugins.register({
+    id: 'spacing-audit',
+    label: '间距检查',
+    icon: '↔',
+    order: 60,
+    render(container) {
+      container.textContent = 'Plugin result';
+    }
+  });
+});
+```
+
+Plugins may provide `render(container, api)` for a panel view or `run(api)` for
+an immediate action. Registration returns an unregister function.
+
+## Token Accounting and Analytics
+
+`state/token-usage.jsonl` separates provider-reported usage from estimates.
+When the host exposes exact counts, record them either from a page integration:
+
+```js
+brainstorm.tokenUsage({
+  source: 'openai-api', model: 'gpt-5',
+  inputTokens: 1200, outputTokens: 340, cachedInputTokens: 800
+});
+```
+
+or from the terminal without asking the model to recompute them:
+
+```bash
+node scripts/record-token-usage.cjs \
+  --state-dir "$STATE_DIR" --source openai-api --model gpt-5 \
+  --input 1200 --output 340 --cached-input 800
+```
+
+The automatic estimate covers screen HTML plus browser interaction metadata; it
+does **not** claim to be the Codex/API bill. The floating panel labels this scope.
+
+All screen, selection, page-view, plugin, export, color, and token-record events
+append to `state/analytics.jsonl` using schema
+`tech-tower.visual-companion.event.v1`. Unlike `state/events`, this file is not
+cleared when a new screen arrives, so it is suitable for later funnel and tool-
+usage analysis. Remote reporting uses the same privacy-filtered event object.
 
 ## Design Tips
 

@@ -14,7 +14,7 @@ command -v curl >/dev/null || { echo "FAIL: 需要 curl"; exit 1; }
 command -v python3 >/dev/null || { echo "FAIL: 需要 python3"; exit 1; }
 node -e 'process.exit(typeof WebSocket === "undefined" ? 1 : 0)' || { echo "FAIL: node 缺少全局 WebSocket（需要 Node 22+）"; exit 1; }
 
-echo "==> 1/6 启动服务器（project-dir: ${PROJECT_DIR}）"
+echo "==> 1/8 启动服务器（project-dir: ${PROJECT_DIR}）"
 OUT="$("$SCRIPT_DIR/scripts/start-server.sh" --project-dir "$PROJECT_DIR" --background)"
 echo "$OUT"
 SESSION_DIR="$(printf '%s' "$OUT" | python3 -c 'import sys,json,os;print(os.path.dirname(json.load(sys.stdin)["state_dir"]))')"
@@ -28,14 +28,14 @@ KEY="${URL##*key=}"
 BASE="http://localhost:$PORT"
 echo "    URL=$URL"
 
-echo "==> 2/6 引导页 + cookie 鉴权 + 品牌渲染"
+echo "==> 2/8 引导页 + cookie 鉴权 + 品牌渲染"
 COOKIES="$STATE_DIR/.smoke-cookies"
 curl -sf -c "$COOKIES" "$URL" -o /dev/null || { echo "FAIL: 引导页请求失败"; exit 1; }
 PAGE="$(curl -sf -b "$COOKIES" "$BASE/")" || { echo "FAIL: 根页面请求失败"; exit 1; }
 printf '%s' "$PAGE" | grep -q "技术塔视觉伴侣 v" || { echo "FAIL: 品牌未渲染"; exit 1; }
 echo "    品牌渲染 OK"
 
-echo "==> 3/6 推送测试内容页"
+echo "==> 3/8 推送测试内容页"
 cat > "$SESSION_DIR/content/smoke-test.html" << 'HTML'
 <h2>冒烟测试：选择布局</h2>
 <p class="subtitle">smoke-test 内容页</p>
@@ -54,9 +54,19 @@ sleep 1.5
 PAGE2="$(curl -sf -b "$COOKIES" "$BASE/")" || { echo "FAIL: 内容页请求失败"; exit 1; }
 printf '%s' "$PAGE2" | grep -q "冒烟测试：选择布局" || { echo "FAIL: 内容页未被分发"; exit 1; }
 printf '%s' "$PAGE2" | grep -q 'data-choice="b"' || { echo "FAIL: 选项标记缺失"; exit 1; }
+printf '%s' "$PAGE2" | grep -q 'tt-floating-tools' || { echo "FAIL: 插件化悬浮球未注入"; exit 1; }
 echo "    内容页渲染 OK"
 
-echo "==> 4/6 WebSocket 模拟点击"
+echo "==> 4/8 页面列表 + HTML/图片导出资源"
+SCREENS="$(curl -sf -b "$COOKIES" "$BASE/api/screens")" || { echo "FAIL: 页面列表接口失败"; exit 1; }
+printf '%s' "$SCREENS" | grep -q 'smoke-test.html' || { echo "FAIL: 页面列表缺少测试页"; exit 1; }
+curl -sf -b "$COOKIES" "$BASE/assets/html-to-image.js" -o "$STATE_DIR/html-to-image.js" || { echo "FAIL: 图片导出资源失败"; exit 1; }
+[ "$(wc -c < "$STATE_DIR/html-to-image.js")" -gt 10000 ] || { echo "FAIL: 图片导出资源异常"; exit 1; }
+EXPORTED="$(curl -sf -b "$COOKIES" "$BASE/export/html/smoke-test.html")" || { echo "FAIL: HTML 导出失败"; exit 1; }
+printf '%s' "$EXPORTED" | grep -q '冒烟测试：选择布局' || { echo "FAIL: HTML 导出内容异常"; exit 1; }
+echo "    页面工具接口 OK"
+
+echo "==> 5/8 WebSocket 模拟点击"
 node -e '
 const [port, key] = process.argv.slice(1);
 const ws = new WebSocket(`ws://localhost:${port}/?key=${key}`);
@@ -72,10 +82,16 @@ sleep 0.5
 [ -f "$STATE_DIR/events" ] && grep -q '"choice":"a"' "$STATE_DIR/events" || { echo "FAIL: events 未落盘"; exit 1; }
 echo "    事件落盘 OK: $(tail -1 "$STATE_DIR/events")"
 
-echo "==> 5/6 停止服务器"
+echo "==> 6/8 埋点与 Token 统计"
+[ -f "$STATE_DIR/analytics.jsonl" ] && grep -q '"type":"click"' "$STATE_DIR/analytics.jsonl" || { echo "FAIL: analytics.jsonl 未持久化点击"; exit 1; }
+STATS="$(curl -sf -b "$COOKIES" "$BASE/api/session-stats")" || { echo "FAIL: Token 统计接口失败"; exit 1; }
+printf '%s' "$STATS" | grep -q '"estimatedTotalTokens"' || { echo "FAIL: Token 统计缺字段"; exit 1; }
+echo "    埋点与 Token 统计 OK"
+
+echo "==> 7/8 停止服务器"
 "$SCRIPT_DIR/scripts/stop-server.sh" "$SESSION_DIR" >/dev/null || { echo "FAIL: stop-server 失败"; exit 1; }
 sleep 1
 if curl -s -m 2 "$BASE/" -o /dev/null 2>/dev/null; then echo "FAIL: 服务器仍在响应"; exit 1; fi
 echo "    服务器已停止"
 
-echo "==> 6/6 PASS：视觉伴侣冒烟测试全部通过"
+echo "==> 8/8 PASS：视觉伴侣冒烟测试全部通过"

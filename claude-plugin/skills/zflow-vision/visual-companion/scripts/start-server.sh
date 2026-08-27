@@ -12,6 +12,9 @@
 #                         Use 0.0.0.0 in remote/containerized environments.
 #   --url-host <host>     Hostname shown in returned URL JSON.
 #   --idle-timeout-minutes <n>  Shut down after n minutes idle (default 240 = 4h).
+#   --analytics-endpoint <url>   Optional HTTP(S) endpoint for privacy-filtered
+#                                analytics events. Local analytics.jsonl is always written.
+#   --analytics-project <name>   Optional project label included in analytics.
 #   --open                Auto-open the browser on the first screen (use only
 #                         after the user approves the visual companion).
 #   --foreground          Run server in the current terminal (no backgrounding).
@@ -26,6 +29,8 @@ FORCE_BACKGROUND="false"
 BIND_HOST="127.0.0.1"
 URL_HOST=""
 IDLE_TIMEOUT_MINUTES=""
+ANALYTICS_ENDPOINT=""
+ANALYTICS_PROJECT=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project-dir)
@@ -42,6 +47,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --idle-timeout-minutes)
       IDLE_TIMEOUT_MINUTES="$2"
+      shift 2
+      ;;
+    --analytics-endpoint)
+      ANALYTICS_ENDPOINT="$2"
+      shift 2
+      ;;
+    --analytics-project)
+      ANALYTICS_PROJECT="$2"
       shift 2
       ;;
     --open)
@@ -62,6 +75,13 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ -n "$ANALYTICS_ENDPOINT" ]] && ! [[ "$ANALYTICS_ENDPOINT" =~ ^https?:// ]]; then
+  echo '{"error": "--analytics-endpoint must use http:// or https://"}'
+  exit 1
+fi
+export BRAINSTORM_ANALYTICS_ENDPOINT="$ANALYTICS_ENDPOINT"
+export BRAINSTORM_ANALYTICS_PROJECT="$ANALYTICS_PROJECT"
 
 if [[ -z "$URL_HOST" ]]; then
   if [[ "$BIND_HOST" == "127.0.0.1" || "$BIND_HOST" == "localhost" ]]; then

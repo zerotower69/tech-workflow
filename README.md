@@ -2,7 +2,7 @@
 
 「技术塔」现在包含两个边界清晰的 skill：用于代码交付的六步工程流水线，以及可单独完成 UI/UX 设计的**技术塔视觉伴侣**。只想做界面设计时，不必进入 plan、build、review 或 pr。
 
-视觉伴侣自包含于 `skills/zflow/visual-companion/`，**不依赖 superpowers 插件/技能**：代码改自 superpowers 6.2.0 的 brainstorming visual companion（MIT），已改名、移除原品牌/远程 logo/遥测相关逻辑，持久化路径改为 `.tech-tower/brainstorm/`。
+视觉伴侣自包含于 `skills/zflow/visual-companion/`，**不依赖 superpowers 插件/技能**：代码改自 superpowers 6.2.0 的 brainstorming visual companion（MIT），已改名、移除原品牌/远程 logo，持久化路径改为 `.tech-tower/brainstorm/`。埋点默认只写本地 JSONL；只有显式配置 endpoint 才会发送经过隐私过滤的事件。
 
 ## 流水线
 
@@ -69,17 +69,17 @@ flowchart LR
    ```bash
    skills/zflow/visual-companion/scripts/start-server.sh --project-dir <项目根> --open
    ```
-3. 用户在返回的本地 URL 中查看原型并点选，点击事件落在会话目录的 `.events`；连接信息在 `state/server-info`。
+3. 用户在返回的本地 URL 中查看原型并点选；可收起悬浮球提供逐页 PNG/HTML 导出、取色、Token 与埋点摘要，反馈事件落在 `state/events`，完整分析事件持续追加到 `state/analytics.jsonl`。
 4. 逐问题决策浏览器还是终端，标准：**用户看到它是否比读到它更容易理解**。
 5. 退出 brainstorm 前执行 `skills/zflow/visual-companion/scripts/stop-server.sh "$SCREEN_DIR"`，原型保留在 `.tech-tower/brainstorm/`。
 
-收尾前可选截取原型快照（须征得同意，告知 token 估算与存放路径），只截 `data-tt-screen` app 页面区域。
+收尾前可选截取原型快照（须征得同意，告知 token 估算与存放路径），只截 `data-tt-screen` app 页面区域。悬浮球按插件注册：内置页面、PNG 导出、HTML 导出、取色器和 Token 统计；后续工具可通过 `brainstorm.plugins.register(...)` 扩展。PNG 使用 `html-to-image`，Token 估算使用 `gpt-tokenizer`，构建后随 skill 离线分发。
 
 详见 `skills/zflow/docs/brainstorm-visual-companion.md` 与 `skills/zflow/visual-companion/GUIDE.md`。
 
 ## 安装
 
-本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.16.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。
+本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.17.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。
 
 ### npm 一键安装（推荐，需 Node ≥ 18）
 
@@ -90,7 +90,7 @@ npx @kaitow/zflow --tool claude      # 检测不到时显式指定目标（codex
 npx @kaitow/zflow --uninstall        # 卸载（加 --global 卸载全局安装）
 ```
 
-安装由本地 Node.js 脚本直接完成，不需要把 Markdown 发给 AI，也不消耗用于理解安装步骤的对话 token。
+安装由本地 Node.js 脚本直接完成，不需要把 Markdown 发给 AI，也不消耗用于理解安装步骤的对话 token。视觉伴侣的内置导出也避免了每次临时生成脚本或重复读图。
 
 | Agent | 项目级 | 全局 |
 |---|---|---|

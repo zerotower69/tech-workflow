@@ -102,10 +102,28 @@ const URL_HOST = process.env.BRAINSTORM_URL_HOST || (HOST === '127.0.0.1' ? 'loc
 const SESSION_DIR = process.env.BRAINSTORM_DIR || '/tmp/brainstorm';
 const CONTENT_DIR = path.join(SESSION_DIR, 'content');
 const STATE_DIR = path.join(SESSION_DIR, 'state');
+const ANALYTICS_FILE = path.join(STATE_DIR, 'analytics.jsonl');
+const TOKEN_USAGE_FILE = path.join(STATE_DIR, 'token-usage.jsonl');
+const ANALYTICS_ENDPOINT = process.env.BRAINSTORM_ANALYTICS_ENDPOINT || '';
+const ANALYTICS_PROJECT = process.env.BRAINSTORM_ANALYTICS_PROJECT || '';
 const COMPANION_NAME = '技术塔视觉伴侣';
-const COMPANION_VERSION = '1.0.0';
+const COMPANION_VERSION = (() => {
+  try {
+    const skill = fs.readFileSync(path.resolve(__dirname, '..', '..', 'SKILL.md'), 'utf-8');
+    return skill.match(/^\s*version:\s*([^\s]+)\s*$/m)?.[1] || 'unknown';
+  } catch (e) { return 'unknown'; }
+})();
 const COMPANION_REPO_URL = 'https://github.com/zerotower69/tech-workflow';
 let ownerPid = process.env.BRAINSTORM_OWNER_PID ? Number(process.env.BRAINSTORM_OWNER_PID) : null;
+
+let countTokens;
+try {
+  ({ countTokens } = require('./vendor/tokenizer.cjs'));
+} catch (e) {
+  // The bundled tokenizer should always ship with the skill. Keep a conservative
+  // fallback for hand-copied legacy installs instead of breaking the server.
+  countTokens = (value) => Math.ceil(Buffer.byteLength(String(value), 'utf8') / 3);
+}
 
 // Per-session secret key. The companion is reachable by any local browser tab
 // and, when bound to a non-loopback host, by any host that can route to it.
@@ -237,17 +255,72 @@ function wrapInFrame(content) {
   return renderBranding(frameTemplate).replace('<!-- CONTENT -->', content);
 }
 
-function getNewestScreen() {
-  const files = fs.readdirSync(CONTENT_DIR)
+function listScreens() {
+  return fs.readdirSync(CONTENT_DIR)
     .filter(f => !f.startsWith('.') && f.endsWith('.html'))
     .map(f => {
-      const fp = path.join(CONTENT_DIR, f);
-      if (!isRegularFileInsideContentDir(fp)) return null;
-      return { path: fp, mtime: fs.statSync(fp).mtime.getTime() };
+      const filePath = path.join(CONTENT_DIR, f);
+      if (!isRegularFileInsideContentDir(filePath)) return null;
+      const stat = fs.statSync(filePath);
+      return { name: f, path: filePath, mtime: stat.mtime.getTime(), bytes: stat.size };
     })
     .filter(Boolean)
-    .sort((a, b) => b.mtime - a.mtime);
-  return files.length > 0 ? files[0].path : null;
+    .sort((a, b) => a.mtime - b.mtime || a.name.localeCompare(b.name));
+}
+
+function getNewestScreen() {
+  const files = listScreens();
+  return files.length > 0 ? files[files.length - 1].path : null;
+}
+
+function requestedScreen(url) {
+  const q = url.indexOf('?');
+  if (q < 0) return null;
+  const requested = new URLSearchParams(url.slice(q + 1)).get('screen');
+  if (!requested || path.basename(requested) !== requested || !requested.endsWith('.html')) return null;
+  const filePath = path.join(CONTENT_DIR, requested);
+  return isRegularFileInsideContentDir(filePath) ? filePath : null;
+}
+
+function screenClientContext(screenFile) {
+  return '<script>window.__TT_COMPANION__=' + JSON.stringify({
+    screen: screenFile ? path.basename(screenFile) : null,
+  }).replace(/</g, '\\u003c') + ';</script>';
+}
+
+function renderScreen(screenFile, { interactive = true } = {}) {
+  let html = screenFile
+    ? (raw => isFullDocument(raw) ? raw : wrapInFrame(raw))(fs.readFileSync(screenFile, 'utf-8'))
+    : waitingPage();
+  if (!interactive) return html;
+  const injection = screenClientContext(screenFile) +
+    '\n<script src="/assets/html-to-image.js"></script>\n' + helperInjection;
+  if (html.includes('</body>')) return html.replace('</body>', injection + '\n</body>');
+  return html + injection;
+}
+
+function inlineContentAssets(html) {
+  return html.replace(/(src|href)=(['"])\/files\/([^'"?#]+)(?:[?#][^'"]*)?\2/gi,
+    (match, attr, quote, encodedName) => {
+      let name;
+      try { name = decodeURIComponent(encodedName); } catch (e) { return match; }
+      if (!name || path.basename(name) !== name) return match;
+      const filePath = path.join(CONTENT_DIR, name);
+      if (!isRegularFileInsideContentDir(filePath)) return match;
+      const mime = MIME_TYPES[path.extname(name).toLowerCase()] || 'application/octet-stream';
+      const data = fs.readFileSync(filePath).toString('base64');
+      return `${attr}=${quote}data:${mime};base64,${data}${quote}`;
+    });
+}
+
+function exportHtml(screenFile) {
+  const raw = fs.readFileSync(screenFile, 'utf-8');
+  let html = isFullDocument(raw) ? raw : wrapInFrame(raw);
+  html = inlineContentAssets(html);
+  const exportStyle = '<style>[data-tt-companion-chrome],.header{display:none!important}.main{height:100vh}</style>';
+  if (html.includes('</head>')) html = html.replace('</head>', exportStyle + '\n</head>');
+  else html = exportStyle + html;
+  return html;
 }
 
 function urlHostForHttp(host) {
@@ -355,6 +428,117 @@ function isAllowedWebSocketOrigin(req) {
   return origin === 'http://' + host;
 }
 
+// ========== Session Metrics and Analytics ==========
+
+function readJsonLines(file) {
+  try {
+    return fs.readFileSync(file, 'utf-8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
+  } catch (e) {
+    return [];
+  }
+}
+
+function finiteNonNegative(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : 0;
+}
+
+function compactAnalyticsEvent(event, source) {
+  const allowed = ['type', 'screen', 'choice', 'id', 'action', 'method', 'format', 'color', 'plugin', 'status', 'error'];
+  const out = {
+    schema: 'tech-tower.visual-companion.event.v1',
+    eventId: crypto.randomUUID(),
+    sessionId: path.basename(SESSION_DIR),
+    project: ANALYTICS_PROJECT || undefined,
+    source,
+    occurredAt: new Date().toISOString(),
+  };
+  for (const key of allowed) {
+    const value = event && event[key];
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      out[key] = typeof value === 'string' ? value.slice(0, 240) : value;
+    }
+  }
+  out.type = out.type || 'unknown';
+  out.estimatedTokens = countTokens(JSON.stringify(out));
+  return out;
+}
+
+function reportAnalytics(event) {
+  if (!ANALYTICS_ENDPOINT) return;
+  let endpoint;
+  try {
+    endpoint = new URL(ANALYTICS_ENDPOINT);
+    if (!['http:', 'https:'].includes(endpoint.protocol)) throw new Error('unsupported protocol');
+  } catch (e) {
+    console.error('analytics endpoint ignored:', e.message);
+    return;
+  }
+  fetch(endpoint, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(event),
+    signal: AbortSignal.timeout(5000),
+  }).then((response) => {
+    if (!response.ok) console.error('analytics report failed:', response.status);
+  }).catch((error) => console.error('analytics report failed:', error.message));
+}
+
+function recordAnalytics(event, source = 'browser') {
+  const compact = compactAnalyticsEvent(event, source);
+  fs.appendFileSync(ANALYTICS_FILE, JSON.stringify(compact) + '\n', { mode: 0o600 });
+  reportAnalytics(compact);
+  return compact;
+}
+
+function recordTokenUsage(event) {
+  const row = {
+    schema: 'tech-tower.visual-companion.token-usage.v1',
+    occurredAt: new Date().toISOString(),
+    source: String(event.source || 'provider').slice(0, 80),
+    model: String(event.model || 'unknown').slice(0, 120),
+    inputTokens: finiteNonNegative(event.inputTokens),
+    outputTokens: finiteNonNegative(event.outputTokens),
+    cachedInputTokens: finiteNonNegative(event.cachedInputTokens),
+  };
+  fs.appendFileSync(TOKEN_USAGE_FILE, JSON.stringify(row) + '\n', { mode: 0o600 });
+  recordAnalytics({ type: 'token_usage_recorded', status: 'ok' }, 'server');
+  return row;
+}
+
+function sessionStats() {
+  const screens = listScreens();
+  const screenTokens = screens.reduce((sum, screen) => {
+    try { return sum + countTokens(fs.readFileSync(screen.path, 'utf-8')); }
+    catch (e) { return sum; }
+  }, 0);
+  const analytics = readJsonLines(ANALYTICS_FILE);
+  const interactionTokens = analytics.reduce((sum, event) => sum + finiteNonNegative(event.estimatedTokens), 0);
+  const usage = readJsonLines(TOKEN_USAGE_FILE);
+  const reported = usage.reduce((totals, row) => ({
+    inputTokens: totals.inputTokens + finiteNonNegative(row.inputTokens),
+    outputTokens: totals.outputTokens + finiteNonNegative(row.outputTokens),
+    cachedInputTokens: totals.cachedInputTokens + finiteNonNegative(row.cachedInputTokens),
+  }), { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0 });
+  return {
+    scope: 'visual-companion-session',
+    estimate: true,
+    screenCount: screens.length,
+    screenTokens,
+    interactionTokens,
+    estimatedTotalTokens: screenTokens + interactionTokens,
+    reported,
+    reportedTotalTokens: reported.inputTokens + reported.outputTokens,
+    analyticsEvents: analytics.length,
+    analyticsReporting: Boolean(ANALYTICS_ENDPOINT),
+  };
+}
+
+function jsonResponse(res, value, status = 200) {
+  res.writeHead(status, securityHeaders({ 'Content-Type': 'application/json; charset=utf-8' }));
+  res.end(JSON.stringify(value));
+}
+
 // ========== HTTP Request Handler ==========
 
 function handleRequest(req, res) {
@@ -377,19 +561,42 @@ function handleRequest(req, res) {
     res.writeHead(200, securityHeaders({ 'Content-Type': 'text/html; charset=utf-8' }));
     res.end(bootstrapPage(keyFromQuery));
   } else if (req.method === 'GET' && pathname === '/') {
-    const screenFile = getNewestScreen();
-    let html = screenFile
-      ? (raw => isFullDocument(raw) ? raw : wrapInFrame(raw))(fs.readFileSync(screenFile, 'utf-8'))
-      : waitingPage();
-
-    if (html.includes('</body>')) {
-      html = html.replace('</body>', helperInjection + '\n</body>');
-    } else {
-      html += helperInjection;
-    }
-
+    const screenFile = requestedScreen(req.url) || getNewestScreen();
+    const html = renderScreen(screenFile);
     res.writeHead(200, securityHeaders({ 'Content-Type': 'text/html; charset=utf-8' }));
     res.end(html);
+  } else if (req.method === 'GET' && pathname === '/api/screens') {
+    jsonResponse(res, {
+      current: path.basename(requestedScreen(req.url) || getNewestScreen() || ''),
+      screens: listScreens().map(({ name, mtime, bytes }) => ({ name, mtime, bytes })),
+    });
+  } else if (req.method === 'GET' && pathname === '/api/session-stats') {
+    jsonResponse(res, sessionStats());
+  } else if (req.method === 'GET' && pathname === '/assets/html-to-image.js') {
+    const vendorPath = path.join(__dirname, 'vendor', 'html-to-image.js');
+    if (!fs.existsSync(vendorPath)) {
+      res.writeHead(404, securityHeaders());
+      res.end('Not found');
+      return;
+    }
+    res.writeHead(200, securityHeaders({ 'Content-Type': 'application/javascript; charset=utf-8' }));
+    res.end(fs.readFileSync(vendorPath));
+  } else if (req.method === 'GET' && pathname.startsWith('/export/html/')) {
+    let fileName;
+    try { fileName = decodeURIComponent(pathname.slice('/export/html/'.length)); }
+    catch (e) { fileName = ''; }
+    const filePath = path.join(CONTENT_DIR, fileName);
+    if (!fileName || path.basename(fileName) !== fileName || !fileName.endsWith('.html') || !isRegularFileInsideContentDir(filePath)) {
+      res.writeHead(404, securityHeaders());
+      res.end('Not found');
+      return;
+    }
+    recordAnalytics({ type: 'export_html', screen: fileName, format: 'html', status: 'ok' });
+    res.writeHead(200, securityHeaders({
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${fileName.replace(/[^A-Za-z0-9._-]/g, '_')}"`,
+    }));
+    res.end(exportHtml(filePath));
   } else if (req.method === 'GET' && pathname.startsWith('/files/')) {
     const fileName = path.basename(pathname.slice(7));
     const filePath = path.join(CONTENT_DIR, fileName);
@@ -481,8 +688,14 @@ function handleMessage(text) {
     console.error('Failed to parse WebSocket message:', e.message);
     return;
   }
+  if (!event || typeof event !== 'object' || Array.isArray(event)) return;
   touchActivity();
   console.log(JSON.stringify({ source: 'user-event', ...event }));
+  if (event.type === 'token_usage') {
+    recordTokenUsage(event);
+    return;
+  }
+  recordAnalytics(event);
   if (event && event.choice) {
     const eventsFile = path.join(STATE_DIR, 'events');
     fs.appendFileSync(eventsFile, JSON.stringify(event) + '\n');
@@ -576,9 +789,11 @@ function startServer() {
         const eventsFile = path.join(STATE_DIR, 'events');
         if (fs.existsSync(eventsFile)) fs.unlinkSync(eventsFile);
         console.log(JSON.stringify({ type: 'screen-added', file: filePath }));
+        recordAnalytics({ type: 'screen_added', screen: filename, status: 'ok' }, 'server');
         maybeOpenBrowser();
       } else {
         console.log(JSON.stringify({ type: 'screen-updated', file: filePath }));
+        recordAnalytics({ type: 'screen_updated', screen: filename, status: 'ok' }, 'server');
       }
 
       broadcast({ type: 'reload' });
@@ -654,7 +869,8 @@ function startServer() {
     const info = JSON.stringify({
       type: 'server-started', port: Number(PORT), host: HOST,
       url_host: URL_HOST, url: companionUrl(),
-      screen_dir: CONTENT_DIR, state_dir: STATE_DIR, idle_timeout_ms: IDLE_TIMEOUT_MS
+      screen_dir: CONTENT_DIR, state_dir: STATE_DIR, idle_timeout_ms: IDLE_TIMEOUT_MS,
+      analytics_file: ANALYTICS_FILE, analytics_reporting: Boolean(ANALYTICS_ENDPOINT)
     });
     console.log(info);
     // server-info embeds the key — keep it owner-only.
@@ -691,6 +907,9 @@ module.exports = {
   encodeFrame,
   decodeFrame,
   browserLauncherForPlatform,
+  compactAnalyticsEvent,
+  exportHtml,
+  sessionStats,
   OPCODES,
   MAX_FRAME_PAYLOAD_BYTES
 };
