@@ -5,7 +5,7 @@
 
 ## 1. plan 步骤：写测试用例规格
 
-拆 Tickets 的同时，产出 `.scratch/<slug>/test-cases.md`，与 `plan.md` 一起过用户审查门。
+拆 Tickets 的同时，产出 `.scratch/<sandbox-id>/test-cases.md`，与 `plan.md` 一起过用户审查门。
 
 每条用例字段：
 

@@ -3,7 +3,7 @@
 `repo.json` 是施工期间持续补齐的仓库交接清单，存放在：
 
 ```text
-.scratch/<slug>/repo.json
+.scratch/<sandbox-id>/repo.json
 ```
 
 它记录本 Ticket 实际修改了哪些仓库、在哪个分支施工，以及审查和交付应比较的 commit 边界。多仓任务必须为每个仓库保留独立记录。
@@ -11,8 +11,8 @@
 v1.14.0 的权威结构为 `schemaVersion: 2`，使用 `workspaceRoot`、`baseCommit`、`headCommit`、`finalCommit`、`pushStatus` 和 `lastVerifiedAt`。旧 `schema_version: 1` 仅作为迁移输入，通过以下命令单向升级；不得并存第二个 `repositories.json`：
 
 ```bash
-zflow-sandbox migrate-repo .scratch/<slug>
-zflow-sandbox verify-repositories .scratch/<slug>
+zflow-sandbox migrate-repo .scratch/<sandbox-id>
+zflow-sandbox verify-repositories .scratch/<sandbox-id>
 ```
 
 schema v2 仓库项示例：
@@ -136,7 +136,7 @@ git status --short
 
 - `final_commit` 必须可解析，且应为 `base_commit` 的后代。合法的无代码变更 Ticket 可以二者相同，但交付说明必须明确这是 no-op。
 - 不得为了得到干净状态而提交、覆盖或删除用户既有的无关改动。
-- 不得把 `repo.json` 放进业务仓库；它属于 `.scratch/<slug>/` 工作流产物。
+- 不得把 `repo.json` 放进业务仓库；它属于 `.scratch/<sandbox-id>/` 工作流产物。
 - 本文件只证明 Git 边界，不代表测试已通过，也不代表远程已推送。
 
 ## 阶段门槛

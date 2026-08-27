@@ -19,6 +19,30 @@ function validateSlug(slug) {
   return slug;
 }
 
+function dateStamp(date = new Date()) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) fail('E_DATE', '无效的沙箱日期');
+  return [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+    .map((value, index) => String(value).padStart(index === 0 ? 4 : 2, '0'))
+    .join('');
+}
+
+function nextSandboxId(baseRoot, suffix, options = {}) {
+  validateSlug(suffix);
+  const day = dateStamp(options.date);
+  let highest = 0;
+  if (fs.existsSync(baseRoot)) {
+    const pattern = new RegExp(`^${day}(\\d{3})-`);
+    for (const entry of fs.readdirSync(baseRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const match = pattern.exec(entry.name);
+      if (match) highest = Math.max(highest, Number(match[1]));
+    }
+  }
+  const sequence = highest + 1;
+  if (sequence > 999) fail('E_SEQUENCE_EXHAUSTED', `${day} 的沙箱轮次已达到 999`);
+  return validateSlug(`${day}${String(sequence).padStart(3, '0')}-${suffix}`);
+}
+
 function safeRelative(input) {
   if (typeof input !== 'string' || !input || input.includes('\0')) fail('E_PATH', '路径不能为空或包含 NUL');
   const unix = input.replace(/\\/g, '/');
@@ -130,7 +154,7 @@ function walkFiles(root, options = {}) {
 }
 
 module.exports = {
-  TRANSACTION, LOCK, now, sha256, json, validateSlug, safeRelative, inside, mkdirp,
+  TRANSACTION, LOCK, now, sha256, json, validateSlug, dateStamp, nextSandboxId, safeRelative, inside, mkdirp,
   readText, readJson, atomicWrite, recoverTransaction, commitTransaction, acquireLock,
   withLock, walkFiles,
 };

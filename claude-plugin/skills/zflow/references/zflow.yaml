@@ -17,9 +17,9 @@ transitions:
     - id: intake
       label: 工单分析
       objective: |
-        先用 scripts/sandbox/cli.cjs 创建或恢复 .scratch/<slug>/ 确定性沙箱；恢复时读取 status、validate 与 handoff。
+        先用 scripts/sandbox/cli.cjs 创建或恢复 .scratch/<sandbox-id>/ 确定性沙箱；恢复时读取 status、validate 与 handoff。
         在任何需求追问前，把任务首次启动时已给到的信息固化为
-        .scratch/<slug>/ticket_context.md（运行手册：references/intake-ticket-context.md），
+        .scratch/<sandbox-id>/ticket_context.md（运行手册：references/intake-ticket-context.md），
         经用户确认后作为后续阶段只读的初始上下文基线。
         再结合领域文档拷问工单，弄清问题、影响范围与关键上下文。
     - id: brainstorm
@@ -29,12 +29,12 @@ transitions:
         知识库仅提供带来源的参考；无知识源显式跳过，冲突写入 decisions.md 并由用户决定。
         再通过协作对话把需求收敛为带 revision 的 spec 并获得用户批准。
         涉及视觉的问题可通过浏览器视觉伴侣展示原型、图表与对比。
-        权威产物：.scratch/<slug>/spec.md。
+        权威产物：.scratch/<sandbox-id>/spec.md。
     - id: plan
       label: 技术方案
       objective: |
         先读取 ticket_context.md，在当前批准的 spec revision 基础上拆解一对一 Plan、实现 Tickets，并同步产出对应测试用例
-        （权威产物：.scratch/<slug>/test-cases.md，与 plan.md 同时提交审查）。
+        （权威产物：.scratch/<sandbox-id>/test-cases.md，与 plan.md 同时提交审查）。
         用例与 Tickets、spec 验收标准逐条映射，按类型区分：
         unit（纯逻辑模块，build 时可用 test_generator MCP 生成骨架）/
         integration / manual（UI 与交互，走 DevTools 清单）。
@@ -47,7 +47,7 @@ transitions:
         1. 仓库命名与仓库根位置；2. 是否设置 local user.name/user.email；
         3. 默认分支 master/main（默认 master）；4. .gitignore 模板；5. 是否关联远程。
         完成首次提交后再开工；已在仓库内则确认分支与工作区状态后开工。
-        第一处施工改动前按 references/build-repo-manifest.md 创建 .scratch/<slug>/repo.json，
+        第一处施工改动前按 references/build-repo-manifest.md 创建 .scratch/<sandbox-id>/repo.json，
         为每个施工仓库记录路径、分支、remotes 与 base_commit；此时 final_commit 为 null。
         对 test-cases.md 中标记「可 MCP 骨架」的纯逻辑模块，用 test_generator MCP
         生成测试骨架，然后修正骨架（模块体系/导入路径）并按用例规格补真实断言，

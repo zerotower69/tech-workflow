@@ -27,7 +27,7 @@ for (let i = 0; i < argv.length; i++) {
   else fail(`未知参数 ${a}`);
 }
 if (!opts.url || !opts.out) {
-  fail('缺少 --url 或 --out', '例：node snapshot-prototype.cjs --url http://localhost:52341/?key=xx --out .scratch/<slug>/mockups/snapshot-1.png');
+  fail('缺少 --url 或 --out', '例：node snapshot-prototype.cjs --url http://localhost:52341/?key=xx --out .scratch/<sandbox-id>/mockups/snapshot-1.png');
 }
 
 let pw;

@@ -6,7 +6,7 @@ const { spawnSync } = require('child_process');
 const { FORMAT_VERSION, PHASES, CHECKPOINTS, DEFAULT_FILES } = require('./constants.cjs');
 const { fail } = require('./errors.cjs');
 const {
-  now, sha256, json, validateSlug, safeRelative, inside, mkdirp, readText, readJson,
+  now, sha256, json, validateSlug, nextSandboxId, safeRelative, inside, mkdirp, readText, readJson,
   atomicWrite, recoverTransaction, commitTransaction, withLock, walkFiles,
 } = require('./filesystem.cjs');
 
@@ -118,6 +118,18 @@ function createSandbox(root, options = {}) {
       ...context.writes, ...knowledge.writes,
     });
     return { root, sandbox, event };
+  });
+}
+
+function createDatedSandbox(baseRoot, options = {}) {
+  const suffix = validateSlug(options.slug);
+  return withLock(baseRoot, () => {
+    const sandboxId = nextSandboxId(baseRoot, suffix, { date: options.date });
+    return createSandbox(path.join(baseRoot, sandboxId), {
+      ...options,
+      slug: sandboxId,
+      title: options.title || suffix,
+    });
   });
 }
 
@@ -499,7 +511,7 @@ function recordReview(root, record, options = {}) {
 }
 
 module.exports = {
-  createSandbox, load, reviseArtifact, approveArtifact, addConflict, resolveConflict, transition, rollback, validate,
+  createSandbox, createDatedSandbox, load, reviseArtifact, approveArtifact, addConflict, resolveConflict, transition, rollback, validate,
   allowedNextTargets, gatesFor, downstream, parseTarget, regenerateHandoff,
   recordEvent,
   recordCommit, recordReview,

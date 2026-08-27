@@ -3,15 +3,15 @@
 `ticket_context.md` 是任务首次启动时 Agent 已获得信息的持久化快照，存放在：
 
 ```text
-.scratch/<slug>/ticket_context.md
+.scratch/<sandbox-id>/ticket_context.md
 ```
 
 它回答的是「这个 Ticket 一开始带着什么信息进入工作流」，不是需求设计文档，也不是会持续膨胀的过程日志。
 
 ## 写入时机
 
-1. workflow 启动后，在 intake 的第一次只读检查中确定 `<slug>`。
-2. 任何需求追问之前，创建 `.scratch/<slug>/ticket_context.md`。
+1. workflow 启动后，在 intake 的第一次只读检查中确定 `<slug>`，并通过 CLI 生成 `<sandbox-id>`。
+2. 任何需求追问之前，创建 `.scratch/<sandbox-id>/ticket_context.md`。
 3. 向用户展示简短摘要；用户纠正后可以修订事实错误，并记录修订来源。
 4. 用户确认快照后，将其视为只读基线。后续发现、决策和验收标准写入 `spec.md`，不要回填并改写初始上下文。
 
@@ -27,6 +27,7 @@
 ## 启动信息
 - 启动时间：<ISO 8601，含时区>
 - Ticket 标识：<slug>
+- 沙箱标识：<sandbox-id>
 - 工作目录：<任务启动时 cwd>
 - 工作区根：<启动时可见的 workspace roots>
 
@@ -67,7 +68,7 @@
 
 intake 只有在以下条件同时满足时才能进入 brainstorm：
 
-- `.scratch/<slug>/ticket_context.md` 真实存在；
+- `.scratch/<sandbox-id>/ticket_context.md` 真实存在；
 - 必填章节齐全，未知信息已明确标注；
 - 用户已确认摘要，或用户明确选择「全部默认」接受当前快照；
 - 问题、影响范围和下一阶段所需的关键上下文已经清楚。

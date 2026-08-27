@@ -9,7 +9,8 @@ const archive = require('./archive.cjs');
 const { atomicWrite, json, readJson } = require('./filesystem.cjs');
 
 function usage() {
-  return `技术塔可迁移工作流沙箱\n\n` +
+  return `技术塔可迁移工作流沙箱\n` +
+    `新建 ID 格式：YYYYMMDDNNN-<slug>（NNN 为当日三位轮次）\n\n` +
     `用法：\n` +
     `  zflow-sandbox create <slug> [--root <dir>] [--title <text>]\n` +
     `  zflow-sandbox status [dir] [--json]\n` +
@@ -59,8 +60,8 @@ function main(argv = process.argv.slice(2)) {
   let result;
   if (command === 'create') {
     const slug = positionals.shift(); if (!slug) throw new SandboxError('E_ARGS', 'create 需要 slug');
-    const root = path.resolve(flags.root || '.scratch', slug);
-    result = core.createSandbox(root, { slug, title: flags.title });
+    const root = path.resolve(flags.root || '.scratch');
+    result = core.createDatedSandbox(root, { slug, title: flags.title });
   } else if (command === 'status') {
     const root = sandboxDir(positionals.shift()); const state = core.load(root);
     result = { ...state.sandbox, allowedNext: core.allowedNextTargets(state.sandbox) };

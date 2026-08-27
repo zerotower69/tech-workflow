@@ -2,7 +2,7 @@
 
 > 适用节点：`build`（动第一行代码之前）
 > 纪律：**一次只问一个问题**，每问都给出默认值；用户可回答「全部默认」一次性跳过。
-> 仓库清单：完成本检查后、施工改动前，按 `build-repo-manifest.md` 创建 `.scratch/<slug>/repo.json`。
+> 仓库清单：完成本检查后、施工改动前，按 `build-repo-manifest.md` 创建 `.scratch/<sandbox-id>/repo.json`。
 
 ## 1. 何时触发
 

@@ -13,6 +13,15 @@ test('TC-001/008: slug 与归档路径拒绝越界', () => {
   for (const value of ['..', '../x', '/tmp/x', 'C:\\tmp\\x', '\\\\server\\x']) assert.throws(() => f.safeRelative(value), { code: 'E_PATH' });
 });
 
+test('TC-009: 沙箱 ID 使用本地日期、当日三位轮次和任务短名', () => {
+  const root = temp();
+  fs.mkdirSync(path.join(root, '20260827001-first'));
+  fs.mkdirSync(path.join(root, '20260827007-another'));
+  fs.mkdirSync(path.join(root, '20260826099-yesterday'));
+  assert.equal(f.nextSandboxId(root, 'login', { date: new Date(2026, 7, 27, 23, 59) }), '20260827008-login');
+  assert.equal(f.nextSandboxId(root, 'login', { date: new Date(2026, 7, 28, 0, 1) }), '20260828001-login');
+});
+
 test('TC-002: 事件 revision 连续性可检测', () => {
   const root = path.join(temp(), 'demo'); core.createSandbox(root, { slug: 'demo' });
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'sandbox.json'))); manifest.eventRevision = 9;

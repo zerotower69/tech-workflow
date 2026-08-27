@@ -2,7 +2,7 @@
 
 > 适用范围：技术塔 workflow 的 `brainstorm`（头脑风暴）步骤。
 > 视觉伴侣实现：本仓库 `visual-companion/`（改自 superpowers 6.2.0 的 brainstorming visual companion，MIT 许可，已改名并移除原品牌与远程资源依赖）。
-> 权威产物不变：`.scratch/<slug>/spec.md`（由 `to-spec` 产出）。
+> 权威产物不变：`.scratch/<sandbox-id>/spec.md`（由 `to-spec` 产出）。
 
 ## 一、与流水线的关系
 
@@ -18,7 +18,7 @@
 4. **澄清问题** — 每次一个，优先选择题，理解目的/约束/成功标准。
 5. **提出 2-3 种方案** — 附权衡与推荐，先讲推荐项。
 6. **分节展示设计** — 篇幅与复杂度匹配，每节获得用户确认。
-7. **写入 spec** — `.scratch/<slug>/spec.md`，用户批准后本步骤才可完成。
+7. **写入 spec** — `.scratch/<sandbox-id>/spec.md`，用户批准后本步骤才可完成。
 8. **收尾清理** — 若启用过视觉伴侣，停止服务器（见第五节）。
 
 ## 三、征求同意（必须是独立消息）
@@ -71,7 +71,7 @@ visual-companion/scripts/stop-server.sh "$SCREEN_DIR"
 
 - `--project-dir` 会话的原型保留在 `.tech-tower/brainstorm/` 供日后参考；`/tmp` 会话停止时删除。
 - `spec.md` 中记录会话目录，并链接原型页面副本：`[原型页面](<workspace>/.tech-tower/brainstorm/<session-id>/frame-template.html)`（用项目内相对路径），便于日后在工程中直接回看。
-- 确认 `.scratch/<slug>/spec.md` 已写入并获用户批准，方可上报步骤完成。
+- 确认 `.scratch/<sandbox-id>/spec.md` 已写入并获用户批准，方可上报步骤完成。
 - 若用户同意原型快照，先完成快照（见第九节）再 stop-server。
 
 ## 六、HARD-GATE（沿袭头脑风暴设计）
@@ -95,7 +95,7 @@ flowchart TD
     H --> I
     I --> J{"用户批准?"}
     J -- "修改" --> E
-    J -- "批准" --> K["写入 .scratch/<slug>/spec.md"]
+    J -- "批准" --> K["写入 .scratch/<sandbox-id>/spec.md"]
     K --> K2{"同意快照?"}
     K2 -- "是" --> K3["snapshot-prototype.cjs 截 data-tt-screen"]
     K2 -- "否" --> L["stop-server.sh 清理"]
@@ -107,7 +107,7 @@ flowchart TD
 
 1. **Skill 可用性**：视觉伴侣已内置于本仓库 `visual-companion/`（`GUIDE.md` + `scripts/`）；若集成进 harness sandbox，需将该目录加入注入清单或挂载进 sandbox。
 2. **步骤 outcome 语义**：视觉伴侣交互轮次应返回 `waiting_for_input`；只有 spec 写入并获批准才允许 `completed`。避免既有缺陷「provider turn success 被当作 step completed」（见来源文档第四节）。
-3. **产物校验**：声称产出 spec 的步骤需校验 `.scratch/<slug>/spec.md` 真实存在（findings 的 P0 建议）。
+3. **产物校验**：声称产出 spec 的步骤需校验 `.scratch/<sandbox-id>/spec.md` 真实存在（findings 的 P0 建议）。
 4. **成本披露**：提议模板已声明「可能消耗较多 token」，必须经用户同意才启用。
 5. **展示标签**：原 findings 指出「头脑风暴」标签与 `to-spec` 产物语义不一致；本次增强强化了 brainstorm 语义。若后续改名对齐，标签与本指令需同步调整。
 
@@ -116,7 +116,7 @@ flowchart TD
 时机：spec 获批后、stop-server 之前。征求同意须独立消息，包含三要素：
 - **范围**：只截 app 页面区域——`[data-tt-screen]` 元素（缺失回退 `#frame-content`），不截整页；
 - **预计消耗**：截图本身为无头浏览器行为，≈0 tokens；后续读回上下文约 `ceil(w×h/750)` tokens/张（390×844 ≈ 440 tokens）；
-- **存放路径**：`.scratch/<slug>/mockups/snapshot-<序号>.png`。
+- **存放路径**：`.scratch/<sandbox-id>/mockups/snapshot-<序号>.png`。
 
 同意后执行（或浏览器 MCP 如 playwriter 做等价 element 截图）：
 

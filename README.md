@@ -17,11 +17,13 @@ v1.14.0 起，六步流程由可迁移沙箱内核提供机器可读状态：con
 ## 可迁移工作流沙箱
 
 ```bash
-zflow-sandbox create my-ticket --root .scratch
-zflow-sandbox status .scratch/my-ticket --json
-zflow-sandbox validate .scratch/my-ticket --strict --json
-zflow-sandbox pack .scratch/my-ticket --output my-ticket.tws
+zflow-sandbox create my-ticket --root .scratch --json
+zflow-sandbox status .scratch/<sandbox-id> --json
+zflow-sandbox validate .scratch/<sandbox-id> --strict --json
+zflow-sandbox pack .scratch/<sandbox-id> --output <sandbox-id>.tws
 ```
+
+`create` 返回的 ID 为 `YYYYMMDDNNN-my-ticket`；`NNN` 是当日三位轮次，从 `001` 开始。
 
 `.tws` 默认只保存工作流产物与完整 Commit 引用；未推送 Commit、已跟踪未提交改动和重要未跟踪文件会分别通过 Git bundle、binary patch 和 payload 保护。恢复会拒绝摘要损坏、路径穿越、非空目标和冲突，不自动覆盖工作区。详见 `skills/zflow/docs/portable-sandbox.md`。
 

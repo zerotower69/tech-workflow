@@ -22,20 +22,20 @@ metadata:
 - 一次只问一个问题，每问给默认值；用户可回字母/单词，也可「全部默认」。
 - HARD-GATE：spec 未批准不写 plan；plan 未批准不动代码。
 - 步骤完成 = 产物落盘 + 用户批准。
-- intake 启动即把首次给到的信息写入 `.scratch/<slug>/ticket_context.md`；用户确认后作为只读基线，后续阶段先读取它，不用新结论覆盖初始上下文。
+- intake 启动即创建 `YYYYMMDDNNN-<slug>` 沙箱，并把首次给到的信息写入 `.scratch/<sandbox-id>/ticket_context.md`；用户确认后作为只读基线，后续阶段先读取它，不用新结论覆盖初始上下文。
 - 新 Ticket 优先用 `scripts/sandbox/cli.cjs create` 建立机器可读沙箱；恢复任务先执行 `status` + `validate` 并读取 `handoff.md`，不得重新生成覆盖。
 - 阶段迁移、产物批准、回退、Commit/Review 证据、Skill Lock 与 pack/restore 必须通过确定性沙箱命令完成；不得只改 Markdown 宣称状态已变化。完整手册：`references/portable-sandbox.md`。
 - context 与澄清收口后先走 knowledge 检查点，再形成 Spec。知识库只提供带来源的参考；无知识源可记录原因后显式跳过，冲突必须由用户决定并写入 `decisions.md`。
 - 已批准产物发生变化必须创建新 revision；回退保留旧文档和 Commit，并把依赖旧 revision 的下游产物标记为 `stale`。
-- build 在第一处施工改动前创建 `.scratch/<slug>/repo.json`，记录每个仓库的路径、分支和 base commit；施工期间随仓库/分支/每个 Ticket 提交持续补齐 head 与 checkpoints，收尾记录 final commit，review 修复提交后同步刷新。
+- build 在第一处施工改动前创建 `.scratch/<sandbox-id>/repo.json`，记录每个仓库的路径、分支和 base commit；施工期间随仓库/分支/每个 Ticket 提交持续补齐 head 与 checkpoints，收尾记录 final commit，review 修复提交后同步刷新。
 - 验证分层：静态校验 ≠ 运行时证明；未真实执行的验证单独声明。
-- 产物约定：工作流产物在 `.scratch/<slug>/`；代码仓库在 `.repository/` 容器目录（可容纳多个 git 仓库，自身不是仓库）。
+- 产物约定：工作流产物在 `.scratch/<sandbox-id>/`；代码仓库在 `.repository/` 容器目录（可容纳多个 git 仓库，自身不是仓库）。
 - 全程中文交流（强制）：解释、汇报、提问一律中文，未经用户明确指定不切换其他语言。
 
 ## 更新检查（每天首次启动）
 
 - skill 触发时先跑 `scripts/check-update.cjs`（当天已查自动跳过；失败静默放行，不阻塞原请求）。
-- `updateAvailable=true` 时一句话告知本地版本/远端最新 tag，问是否更新：用户同意后才执行 `npx skills add zerotower69/tech-workflow --skill '*' --global --yes` 更新已安装 skills，再继续原请求；拒绝则直接继续原请求。项目级更新移除 `--global` 后在项目根执行。
+- `updateAvailable=true` 时一句话告知本地版本/远端最新 tag，问是否更新：用户同意后才执行 `npx skills add zerotower69/tech-workflow --skill '*' --global --yes` 更新已安装 skills，再继续原请求；拒绝则直接继续原请求。项目级更新去掉 `--global`。
 
 ## 各步骤要点与手册
 
