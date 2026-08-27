@@ -14,6 +14,7 @@ const home = path.join(tempRoot, 'home');
 const cache = path.join(tempRoot, 'cache');
 const userConfig = path.join(tempRoot, 'npmrc');
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const version = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
 const npmEnv = {
   ...process.env,
   npm_config_prefix: prefix,
@@ -60,7 +61,7 @@ try {
     }
     for (const name of names) {
       const content = fs.readFileSync(path.join(skillsBase, name, 'SKILL.md'), 'utf8');
-      if (!content.includes(`name: ${name}`) || !content.includes('version: 1.15.0')) {
+      if (!content.includes(`name: ${name}`) || !content.includes(`version: ${version}`)) {
         throw new Error(`${agentDir}/${name} frontmatter mismatch`);
       }
     }
@@ -71,7 +72,7 @@ try {
     }
   }
 
-  console.log('✅ npm link 首次安装通过：Codex/Claude 均仅识别 zflow 与 zflow-vision (v1.15.0)');
+  console.log(`✅ npm link 首次安装通过：Codex/Claude 均仅识别 zflow 与 zflow-vision (v${version})`);
 } finally {
   fs.rmSync(tempRoot, { recursive: true, force: true });
 }

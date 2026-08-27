@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { validateVersion } = require('../scripts/verify-release.cjs');
 
 const root = path.resolve(__dirname, '..');
 const installer = path.join(root, 'bin', 'zflow.js');
@@ -38,7 +39,7 @@ function skillNames(base) {
 
 test('TC-001: scoped package exposes zflow commands', () => {
   assert.equal(packageJson.name, '@kaitow/zflow');
-  assert.equal(packageJson.version, '1.15.0');
+  assert.doesNotThrow(() => validateVersion(packageJson.version));
   assert.equal(packageJson.publishConfig.access, 'public');
   assert.deepEqual(packageJson.bin, {
     zflow: 'bin/zflow.js',
@@ -48,6 +49,7 @@ test('TC-001: scoped package exposes zflow commands', () => {
     const result = run(args, root, os.homedir());
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /zflow/);
+    if (args[0] === '--version') assert.match(result.stdout, new RegExp(packageJson.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 });
 

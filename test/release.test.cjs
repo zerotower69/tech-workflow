@@ -8,9 +8,12 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const {
   classifyRegistryResult,
+  publishTagForVersion,
   validateTag,
+  validateVersion,
   verifyAncestor,
 } = require('../scripts/verify-release.cjs');
+const { updatePackageVersion } = require('../scripts/apply-release-version.cjs');
 const { verifyPack } = require('../scripts/verify-pack.cjs');
 
 const root = path.resolve(__dirname, '..');
@@ -21,10 +24,26 @@ function git(cwd, args) {
   return result.stdout.trim();
 }
 
-test('TC-R01: tag 必须严格匹配正式 package version', () => {
-  assert.equal(validateTag('v1.15.0', '1.15.0'), '1.15.0');
-  assert.throws(() => validateTag('v1.15.1', '1.15.0'), { code: 'E_TAG_VERSION' });
-  assert.throws(() => validateTag('v1.15.0-beta.1', '1.15.0-beta.1'), { code: 'E_PACKAGE_VERSION' });
+test('TC-R01: tag 是 SemVer 2.0.0 唯一版本来源', t => {
+  assert.equal(validateTag('v1.16.0'), '1.16.0');
+  assert.equal(validateTag('v2.0.0-beta.1+build.7'), '2.0.0-beta.1+build.7');
+  assert.equal(validateVersion('0.0.0-rc.1'), '0.0.0-rc.1');
+  assert.throws(() => validateTag('1.16.0'), { code: 'E_TAG_VERSION' });
+  assert.throws(() => validateTag('v01.16.0'), { code: 'E_SEMVER' });
+  assert.throws(() => validateTag('v1.16.0-beta.01'), { code: 'E_SEMVER' });
+  assert.equal(publishTagForVersion('1.16.0'), 'latest');
+  assert.equal(publishTagForVersion('1.16.0+build-7'), 'latest');
+  assert.equal(publishTagForVersion('1.17.0-rc.1'), 'next');
+
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'zflow-release-version-'));
+  t.after(() => fs.rmSync(cwd, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(cwd, 'package.json'), '{"name":"@kaitow/zflow","version":"1.0.0"}\n');
+  assert.deepEqual(updatePackageVersion(cwd, '2.1.0-beta.2'), {
+    package: '@kaitow/zflow',
+    previousVersion: '1.0.0',
+    version: '2.1.0-beta.2',
+  });
+  assert.equal(JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')).version, '2.1.0-beta.2');
 });
 
 test('TC-R02: 只有 main 祖先 commit 可发布', t => {
@@ -64,12 +83,15 @@ test('TC-R04/R05: workflow 仅 tag 触发且使用 OIDC、顺序正确', () => {
   assert.doesNotMatch(workflow, /secrets\.NPM_TOKEN|NODE_AUTH_TOKEN/);
   assert.doesNotMatch(workflow, /npm_[A-Za-z0-9]{20,}/);
   const verifyIndex = workflow.indexOf('verify-release.cjs');
+  const applyIndex = workflow.indexOf('apply-release-version.cjs');
   const testIndex = workflow.indexOf('npm test');
   const linkIndex = workflow.indexOf('npm run test:link');
   const packIndex = workflow.indexOf('verify-pack.cjs');
   const publishIndex = workflow.indexOf('npm publish --access public');
-  assert.ok(verifyIndex >= 0 && verifyIndex < testIndex);
+  assert.ok(verifyIndex >= 0 && verifyIndex < applyIndex);
+  assert.ok(applyIndex < testIndex);
   assert.ok(testIndex < linkIndex && linkIndex < packIndex && packIndex < publishIndex);
+  assert.match(workflow, /npm publish --access public --tag "\$\{\{ steps\.release\.outputs\.npm_tag \}\}"/);
 });
 
 test('TC-R06: pack 校验只接受两个产品 skill', () => {

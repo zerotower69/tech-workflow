@@ -8,11 +8,17 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { validateVersion } = require('./verify-release.cjs');
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const version = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')).version;
 
-if (!/^\d+\.\d+\.\d+(-[\w.-]+)?$/.test(version)) {
+try {
+  validateVersion(version);
+} catch {
   console.error(`❌ package.json 版本格式异常: ${version}`);
   process.exit(1);
 }

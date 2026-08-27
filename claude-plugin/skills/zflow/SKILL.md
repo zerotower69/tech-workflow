@@ -3,10 +3,10 @@ name: zflow
 description: 技术塔六步工程执行流水线（intake→brainstorm→plan→build→review→pr）。当用户明确要走技术塔流程，或需要把需求落实为代码、测试、审查与交付的完整工程闭环时使用。内置 brainstorm 视觉决策、git 建仓引导、测试用例集成和运行时回归。只想完成 UI/UX 设计、页面原型或视觉比稿而不实现代码时，不使用本 skill，改用 zflow-vision。
 metadata:
   short-description: 技术塔六步流水线：视觉伴侣+建仓引导+测试集成
-  version: 1.15.0
+  version: 1.16.0
 ---
 
-# 技术塔工作流 v1.15.0
+# 技术塔工作流 v1.16.0
 
 六步流水线：intake → brainstorm → plan → build → review → pr。
 拓扑定义：`references/zflow.yaml`；端到端示例：`references/demo.md`。

@@ -79,7 +79,7 @@ flowchart LR
 
 ## 安装
 
-本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.15.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。
+本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.16.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。
 
 ### npm 一键安装（推荐，需 Node ≥ 18）
 
@@ -150,17 +150,16 @@ skills/zflow/visual-companion/smoke-test.sh
 发布由 `.github/workflows/publish-npm.yml` 在新版本 tag 推送时自动完成。普通 `main` push 和 PR merge 不会直接发包。
 
 ```bash
-npm version patch   # 或 minor / major：自动改 package.json 并同步全部版本位点（.npmrc 已禁用自动 tag）
-# 手工在 SKILL.md「版本历史」补一条 vX.Y.Z 记录
-./scripts/pack-claude-plugin.sh
 npm test && npm run test:link
-git commit -am "release: vX.Y.Z"
-# 合并到 main 后再创建并推送完全匹配 package.json version 的 tag
+git push origin main
+# tag 是发布版本的唯一来源；无需手改 package.json
 git tag -a vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-Action 会验证 tag=`v<package.version>`、tag commit 已进入 `origin/main`、registry 中不存在同版本，并在测试、link 首装和 pack 内容校验全部通过后执行 `npm publish --access public`。任何校验失败都不会发布。
+Action 从 `v<semver>` tag 解析版本，在 Runner 内自动更新 `package.json`、两个 skill、插件清单和安装提示版本，重建 Claude 插件后再执行测试、link 首装、pack 内容校验与发布。仓库中的旧版本号不会限制发布版本，也不会由 Action 反向提交代码。
+
+tag 遵循 SemVer 2.0.0，例如正式版 `v1.17.0`、预发布版 `v2.0.0-rc.1`、带构建元数据的 `v1.17.0+build.3`；非法前导零会被拒绝。正式版发布到 npm `latest`，预发布版发布到 `next`。tag commit 必须已进入 `origin/main`，且 registry 中不得存在同版本；任何校验失败都不会发布。
 
 GitHub Actions 使用 npm Trusted Publishing（OIDC），不读取 `NPM_TOKEN`。包已经存在后，在 npm 包设置的 Trusted Publisher 中绑定 GitHub Actions：owner `zerotower69`、repository `tech-workflow`、workflow `publish-npm.yml`，environment 留空，并只允许 `npm publish`。仓库 workflow 已提供 `id-token: write`，使用 GitHub-hosted runner、Node 24 与支持 OIDC 的 npm。
 

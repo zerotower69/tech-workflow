@@ -3,7 +3,7 @@ name: zflow-vision
 description: 使用技术塔视觉伴侣在浏览器中独立完成 UI/UX 设计、页面原型、布局比稿和视觉方向收敛。用户只想设计界面、查看可点击方案或产出 UI 设计稿，而不要求进入开发、测试、代码审查与交付流水线时使用；需要完整工程实现时改用 zflow。
 metadata:
   short-description: 独立 UI 设计：浏览器比稿、点选、迭代与设计交付
-  version: 1.15.0
+  version: 1.16.0
 ---
 
 # 技术塔视觉伴侣

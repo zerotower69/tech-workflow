@@ -35,8 +35,15 @@ jobs:
       - name: Fetch default branch
         run: git fetch --no-tags origin main:refs/remotes/origin/main
 
-      - name: Verify tag, version, main ancestry, and registry state
+      - name: Verify tag SemVer, main ancestry, and registry state
         run: node scripts/verify-release.cjs --tag "$GITHUB_REF_NAME" --branch origin/main
+
+      - name: Apply npm version from tag
+        id: release
+        run: node scripts/apply-release-version.cjs "$GITHUB_REF_NAME"
+
+      - name: Rebuild Claude plugin with release version
+        run: ./scripts/pack-claude-plugin.sh
 
       - name: Run automated tests
         run: npm test
@@ -50,4 +57,4 @@ jobs:
           node scripts/verify-pack.cjs "$RUNNER_TEMP/npm-pack.json"
 
       - name: Publish public package
-        run: npm publish --access public
+        run: npm publish --access public --tag "${{ steps.release.outputs.npm_tag }}"

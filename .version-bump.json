@@ -1,6 +1,6 @@
 {
-  "comment": "版本位点清单：单一事实源 = package.json；同步由 scripts/sync-version.js 执行（npm version 钩子触发，也可手工运行）",
-  "source": "package.json",
+  "comment": "版本位点清单：本地同步源 = package.json；CI 发布源 = Git v<semver> tag，由 apply-release-version.cjs 写入 package.json 后统一同步",
+  "source": "package.json（本地）/ Git tag（CI 发布）",
   "files": [
     { "path": "skills/zflow/SKILL.md", "note": "frontmatter version + 标题版本；「版本历史」条目手工维护" },
     { "path": "skills/zflow-vision/SKILL.md", "note": "frontmatter version" },

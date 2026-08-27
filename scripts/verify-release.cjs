@@ -6,7 +6,8 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
-const RELEASE_VERSION_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+// SemVer 2.0.0 官方建议的 ECMAScript 兼容正则：支持 prerelease 与 build metadata。
+const RELEASE_VERSION_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
 
 class ReleaseError extends Error {
   constructor(code, message, details = null) {
@@ -34,14 +35,24 @@ function parseArgs(argv) {
   return result;
 }
 
-function validateTag(tag, version) {
+function validateVersion(version) {
   if (!RELEASE_VERSION_RE.test(version)) {
-    throw new ReleaseError('E_PACKAGE_VERSION', `package.json version 不是正式三段 SemVer: ${version}`);
-  }
-  if (tag !== `v${version}`) {
-    throw new ReleaseError('E_TAG_VERSION', `tag ${tag || '<empty>'} 与 package version ${version} 不一致`);
+    throw new ReleaseError('E_SEMVER', `版本不是合法 SemVer 2.0.0: ${version || '<empty>'}`);
   }
   return version;
+}
+
+function validateTag(tag) {
+  if (typeof tag !== 'string' || !tag.startsWith('v')) {
+    throw new ReleaseError('E_TAG_VERSION', `发布 tag 必须使用 v<semver>: ${tag || '<empty>'}`);
+  }
+  return validateVersion(tag.slice(1));
+}
+
+function publishTagForVersion(version) {
+  validateVersion(version);
+  const match = RELEASE_VERSION_RE.exec(version);
+  return match[4] ? 'next' : 'latest';
 }
 
 function run(command, args, cwd = root) {
@@ -91,13 +102,15 @@ function verifyRegistryVersion(packageName, version, cwd = root) {
 
 function verifyRelease(options, cwd = root) {
   const pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'));
-  validateTag(options.tag, pkg.version);
+  const version = validateTag(options.tag);
   const commit = verifyAncestor(options.commit || options.tag, options.branch, cwd);
-  const registry = options.skipRegistry ? 'skipped' : verifyRegistryVersion(pkg.name, pkg.version, cwd);
+  const registry = options.skipRegistry ? 'skipped' : verifyRegistryVersion(pkg.name, version, cwd);
   return {
     ok: true,
     package: pkg.name,
-    version: pkg.version,
+    version,
+    sourceVersion: pkg.version,
+    publishTag: publishTagForVersion(version),
     tag: options.tag,
     commit,
     branch: options.branch,
@@ -127,7 +140,9 @@ module.exports = {
   ReleaseError,
   classifyRegistryResult,
   parseArgs,
+  publishTagForVersion,
   validateTag,
+  validateVersion,
   verifyAncestor,
   verifyRegistryVersion,
   verifyRelease,
