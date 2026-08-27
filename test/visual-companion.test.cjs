@@ -27,6 +27,7 @@ test('TC-V01: floating tool helper keeps pure utilities testable', () => {
   assert.equal(helper.nextReconnectDelay(20000, 30000), 30000);
   assert.equal(helper.rgbToHex('rgba(12, 34, 56, 1)'), '#0C2238');
   assert.equal(helper.rgbToHex('rgba(12, 34, 56, 0)'), null);
+  assert.equal(helper.DISCONNECTED_NOTICE_AFTER_MS, 15000);
 });
 
 test('TC-V02: mature npm capabilities are shipped as offline bundles', () => {
@@ -34,10 +35,12 @@ test('TC-V02: mature npm capabilities are shipped as offline bundles', () => {
   const tokenizerBundle = path.join(scripts, 'vendor/tokenizer.cjs');
   const expressBundle = path.join(scripts, 'vendor/express.cjs');
   const markdownBundle = path.join(scripts, 'vendor/markdown.cjs');
+  const popperBundle = path.join(scripts, 'vendor/popper.js');
   assert.ok(fs.statSync(imageBundle).size > 10000);
   assert.ok(fs.statSync(tokenizerBundle).size > 100000);
   assert.ok(fs.statSync(expressBundle).size > 100000);
   assert.ok(fs.statSync(markdownBundle).size > 50000);
+  assert.ok(fs.statSync(popperBundle).size > 10000);
   const { countTokens } = require(tokenizerBundle);
   assert.ok(countTokens('技术塔视觉伴侣 token test') >= 5);
   const helper = fs.readFileSync(path.join(scripts, 'helper.js'), 'utf8');
@@ -45,6 +48,8 @@ test('TC-V02: mature npm capabilities are shipped as offline bundles', () => {
   assert.match(helper, /htmlToImage\.toPng/);
   assert.match(helper, /EyeDropper/);
   assert.match(helper, /export-site/);
+  assert.match(helper, /Popper\.createPopper/);
+  assert.doesNotMatch(helper, /Companion paused|bs-tombstone/);
 });
 
 test('TC-V03: analytics payload excludes page text and sensitive ad-hoc fields', () => {
@@ -68,15 +73,34 @@ test('TC-V04: exact provider usage recorder appends schema-valid JSONL', t => {
   const result = spawnSync(process.execPath, [
     path.join(scripts, 'record-token-usage.cjs'), '--state-dir', stateDir,
     '--source', 'test-provider', '--model', 'test-model', '--input', '1200',
-    '--output', '340', '--cached-input', '800',
+    '--output', '340', '--cached-input', '800', '--turn-id', 'screen:layout.html',
+    '--turn-index', '1', '--label', '首页方向',
   ], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   const row = JSON.parse(fs.readFileSync(path.join(stateDir, 'token-usage.jsonl'), 'utf8').trim());
   assert.deepEqual([row.inputTokens, row.outputTokens, row.cachedInputTokens], [1200, 340, 800]);
   assert.equal(row.schema, 'tech-tower.visual-companion.token-usage.v1');
+  assert.deepEqual([row.turnId, row.turnIndex, row.label], ['screen:layout.html', 1, '首页方向']);
 });
 
-test('TC-V05: export all builds a portable, sanitized design site', async t => {
+test('TC-V05: token stats expose estimated and official usage by visual turn', () => {
+  const { summarizeTurns } = require(path.join(scripts, 'server.cjs'));
+  const turns = summarizeTurns([
+    { name: 'layout.html', tokens: 100, updatedAt: '2026-08-27T00:00:00.000Z' },
+    { name: 'detail.html', tokens: 200, updatedAt: '2026-08-27T00:01:00.000Z' },
+  ], [
+    { screen: 'layout.html', estimatedTokens: 20 },
+  ], [
+    { turnIndex: 1, inputTokens: 80, outputTokens: 40, cachedInputTokens: 10, label: '首页方向', occurredAt: '2026-08-27T00:02:00.000Z' },
+    { turnId: 'conversation:3', inputTokens: 30, outputTokens: 10, label: '补充反馈', occurredAt: '2026-08-27T00:03:00.000Z' },
+  ]);
+  assert.equal(turns.length, 3);
+  assert.deepEqual([turns[0].label, turns[0].source, turns[0].totalTokens], ['首页方向', 'official', 120]);
+  assert.deepEqual([turns[1].source, turns[1].totalTokens], ['estimate', 200]);
+  assert.deepEqual([turns[2].id, turns[2].source, turns[2].totalTokens], ['conversation:3', 'official', 40]);
+});
+
+test('TC-V06: export all builds a portable, sanitized design site', async t => {
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'zflow-design-site-'));
   t.after(() => fs.rmSync(fixture, { recursive: true, force: true }));
   const session = path.join(fixture, 'session');

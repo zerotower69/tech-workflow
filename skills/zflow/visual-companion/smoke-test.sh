@@ -67,6 +67,8 @@ SCREENS="$(curl -sf -b "$COOKIES" "$BASE/api/screens")" || { echo "FAIL: 页面�
 printf '%s' "$SCREENS" | grep -q 'smoke-test.html' || { echo "FAIL: 页面列表缺少测试页"; exit 1; }
 curl -sf -b "$COOKIES" "$BASE/assets/html-to-image.js" -o "$STATE_DIR/html-to-image.js" || { echo "FAIL: 图片导出资源失败"; exit 1; }
 [ "$(wc -c < "$STATE_DIR/html-to-image.js")" -gt 10000 ] || { echo "FAIL: 图片导出资源异常"; exit 1; }
+curl -sf -b "$COOKIES" "$BASE/assets/popper.js" -o "$STATE_DIR/popper.js" || { echo "FAIL: Popper 定位资源失败"; exit 1; }
+[ "$(wc -c < "$STATE_DIR/popper.js")" -gt 10000 ] || { echo "FAIL: Popper 定位资源异常"; exit 1; }
 EXPORTED="$(curl -sf -b "$COOKIES" "$BASE/export/html/smoke-test.html")" || { echo "FAIL: HTML 导出失败"; exit 1; }
 printf '%s' "$EXPORTED" | grep -q '冒烟测试：选择布局' || { echo "FAIL: HTML 导出内容异常"; exit 1; }
 echo "    页面工具接口 OK"
@@ -101,6 +103,7 @@ echo "==> 7/9 埋点与 Token 统计"
 [ -f "$STATE_DIR/analytics.jsonl" ] && grep -q '"type":"click"' "$STATE_DIR/analytics.jsonl" || { echo "FAIL: analytics.jsonl 未持久化点击"; exit 1; }
 STATS="$(curl -sf -b "$COOKIES" "$BASE/api/session-stats")" || { echo "FAIL: Token 统计接口失败"; exit 1; }
 printf '%s' "$STATS" | grep -q '"estimatedTotalTokens"' || { echo "FAIL: Token 统计缺字段"; exit 1; }
+printf '%s' "$STATS" | grep -q '"turns"' || { echo "FAIL: Token 统计缺少逐轮数据"; exit 1; }
 echo "    埋点与 Token 统计 OK"
 
 echo "==> 8/9 停止服务器"

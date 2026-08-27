@@ -126,7 +126,7 @@ authenticated same-machine collector in front when authentication is required.
 ## The Loop
 
 1. **Check server is alive**, then **write HTML** to a new file in `screen_dir`:
-   - **Required: confirm the server is alive before referring to the URL or pushing a screen.** Check that `$STATE_DIR/server-info` exists and `$STATE_DIR/server-stopped` does not. If it has shut down, restart it with `start-server.sh` using the **same `--project-dir`** — it reuses the same port, so the user's open tab reconnects on its own (it shows a "paused" overlay while the server is down) and you don't need to send a new URL. The server auto-exits after 4 hours idle (configurable with `--idle-timeout-minutes`).
+   - **Required: confirm the server is alive before referring to the URL or pushing a screen.** Check that `$STATE_DIR/server-info` exists and `$STATE_DIR/server-stopped` does not. If it has shut down, restart it with `start-server.sh` using the **same `--project-dir`** — it reuses the same port, so the user's open tab reconnects on its own. While disconnected, the current design remains fully visible and usable; only the header status and a one-time toast report the reconnect state. The server auto-exits after 4 hours idle (configurable with `--idle-timeout-minutes`).
    - Use semantic filenames: `platform.html`, `visual-style.html`, `layout.html`
    - **Never reuse filenames** — each screen gets a fresh file
    - Use your file-creation tool — **never use cat/heredoc** (dumps noise into terminal)
@@ -293,6 +293,9 @@ If `$STATE_DIR/events` doesn't exist, the user didn't interact with the browser 
 
 Every page gets a collapsed `TT` floating ball. It can be dragged and docks to
 either side, stays outside `data-tt-screen`, and is excluded from PNG exports.
+The popup is positioned by the bundled offline `@popperjs/core` runtime, so it
+flips and stays inside the viewport near edges without covering more of the
+design than necessary.
 Opening it exposes these built-ins:
 
 - **页面** — visit any individual semantic HTML screen in the session.
@@ -303,8 +306,10 @@ Opening it exposes these built-ins:
   preserving analytics summary into a portable Express-powered review site.
 - **取色器** — frequently used reference colors plus the browser `EyeDropper`
   pixel picker, with computed-style element picking as a fallback.
-- **Token** — visual-session estimate, exact provider usage when supplied, screen
-  count, and analytics-event count.
+- **Token** — live per-turn totals refreshed every two seconds, visual-session
+  estimate, and exact provider usage when supplied. Each semantic page forms a
+  visual turn automatically; reported `turnId` or `turnIndex` replaces that
+  turn's estimate with official usage.
 
 Add tools without editing the floating-ball shell. A page script can register a
 plugin after the ready event:
@@ -375,6 +380,7 @@ When the host exposes exact counts, record them either from a page integration:
 ```js
 brainstorm.tokenUsage({
   source: 'openai-api', model: 'gpt-5',
+  turnId: 'screen:layout.html', turnIndex: 2, label: '布局确认',
   inputTokens: 1200, outputTokens: 340, cachedInputTokens: 800
 });
 ```
@@ -384,11 +390,15 @@ or from the terminal without asking the model to recompute them:
 ```bash
 node scripts/record-token-usage.cjs \
   --state-dir "$STATE_DIR" --source openai-api --model gpt-5 \
+  --turn-id screen:layout.html --turn-index 2 --label 布局确认 \
   --input 1200 --output 340 --cached-input 800
 ```
 
-The automatic estimate covers screen HTML plus browser interaction metadata; it
-does **not** claim to be the Codex/API bill. The floating panel labels this scope.
+The Token plugin refreshes every two seconds and lists the latest 12 visual
+turns. The automatic estimate covers each screen's HTML plus its browser
+interaction metadata; it does **not** claim to be the Codex/API bill. Exact
+per-turn totals require the host to report usage with `turnId` or `turnIndex`,
+and the floating panel labels official and estimated values separately.
 
 All screen, selection, page-view, plugin, export, color, and token-record events
 append to `state/analytics.jsonl` using schema

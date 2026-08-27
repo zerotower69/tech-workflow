@@ -69,17 +69,17 @@ flowchart LR
    ```bash
    skills/zflow/visual-companion/scripts/start-server.sh --project-dir <项目根> --open
    ```
-3. 用户在返回的本地 URL 中查看原型并点选；可收起悬浮球提供逐页 PNG/HTML、全量设计交付站导出、取色、Token 与埋点摘要，反馈事件落在 `state/events`，完整分析事件持续追加到 `state/analytics.jsonl`。
+3. 用户在返回的本地 URL 中查看原型并点选；可收起悬浮球使用离线 Popper.js 自动避让定位，提供逐页 PNG/HTML、全量设计交付站导出、取色、实时逐轮 Token 与埋点摘要，反馈事件落在 `state/events`，完整分析事件持续追加到 `state/analytics.jsonl`。服务器断连时页面继续显示，仅用状态和提示告知自动重连。
 4. 逐问题决策浏览器还是终端，标准：**用户看到它是否比读到它更容易理解**。
 5. 退出 brainstorm 前执行 `skills/zflow/visual-companion/scripts/stop-server.sh "$SCREEN_DIR"`，原型保留在 `.tech-tower/brainstorm/`。
 
-收尾前可选截取原型快照（须征得同意，告知 token 估算与存放路径），只截 `data-tt-screen` app 页面区域。悬浮球按插件注册：内置页面、PNG 导出、HTML 导出、导出所有、取色器和 Token 统计；后续工具可通过 `brainstorm.plugins.register(...)` 扩展。PNG 使用 `html-to-image`，Token 估算使用 `gpt-tokenizer`。全量导出会生成含全部页面、设计决策与聚合埋点摘要的可移植 Express 静态站，复制目录后执行 `node serve.cjs --open` 即可查看；脚本入口为 `visual-companion/scripts/export-design-site.cjs --session-dir <会话目录>`。依赖均构建后随 skill 离线分发。
+收尾前可选截取原型快照（须征得同意，告知 token 估算与存放路径），只截 `data-tt-screen` app 页面区域。悬浮球按插件注册：内置页面、PNG 导出、HTML 导出、导出所有、取色器和实时逐轮 Token 统计；后续工具可通过 `brainstorm.plugins.register(...)` 扩展。弹窗定位使用 `@popperjs/core`，PNG 使用 `html-to-image`，Token 估算使用 `gpt-tokenizer`；这些依赖均构建后随 skill 离线分发。每个语义页面自动形成一个视觉轮次，宿主传入 `turnId` / `turnIndex` 时显示对应官方 usage，否则明确标记为页面与交互估算。全量导出会生成含全部页面、设计决策与聚合埋点摘要的可移植 Express 静态站，复制目录后执行 `node serve.cjs --open` 即可查看；脚本入口为 `visual-companion/scripts/export-design-site.cjs --session-dir <会话目录>`。
 
 详见 `skills/zflow/docs/brainstorm-visual-companion.md` 与 `skills/zflow/visual-companion/GUIDE.md`。
 
 ## 安装
 
-本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.18.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。
+本仓库为多 skill 包（`skills/` 目录下每个子目录一个 skill），当前版本 **v1.19.0**（版本号由 `scripts/sync-version.js` 统一维护）。支持 Codex 与 Claude Code 两大 Agent，安装时把 `skills/` 下全部 skill 复制到目标 skills 目录。
 
 ### npm 一键安装（推荐，需 Node ≥ 18）
 

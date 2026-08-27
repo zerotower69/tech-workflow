@@ -3,7 +3,8 @@
 
   const MIN_RECONNECT_MS = 500;
   const MAX_RECONNECT_MS = 30000;
-  const TOMBSTONE_AFTER_MS = 15000;
+  const DISCONNECTED_NOTICE_AFTER_MS = 15000;
+  const STATS_REFRESH_MS = 2000;
 
   function nextReconnectDelay(current, max) {
     return Math.min(current * 2, max);
@@ -20,7 +21,7 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { nextReconnectDelay, rgbToHex, MIN_RECONNECT_MS, MAX_RECONNECT_MS, TOMBSTONE_AFTER_MS };
+    module.exports = { nextReconnectDelay, rgbToHex, MIN_RECONNECT_MS, MAX_RECONNECT_MS, DISCONNECTED_NOTICE_AFTER_MS };
   }
   if (typeof window === 'undefined') return;
 
@@ -32,10 +33,13 @@
   let reconnectTimer = null;
   let disconnectedSince = null;
   let everConnected = false;
-  let tombstoneShown = false;
+  let disconnectedNoticeShown = false;
   let toolRoot = null;
   let toolPanel = null;
   let toolContent = null;
+  let toolBall = null;
+  let popperInstance = null;
+  let panelResizeObserver = null;
 
   function sessionKey() {
     try { return window.sessionStorage && window.sessionStorage.getItem('brainstorm-session-key'); }
@@ -45,12 +49,6 @@
   function websocketUrl() {
     const key = sessionKey();
     return 'ws://' + window.location.host + (key ? '/?key=' + encodeURIComponent(key) : '');
-  }
-
-  function reloadAfterRecovery() {
-    const key = sessionKey();
-    if (key) window.location.replace('/?key=' + encodeURIComponent(key));
-    else window.location.reload();
   }
 
   function setStatus(state) {
@@ -67,30 +65,18 @@
     el.style.setProperty('--status-color', current[1]);
   }
 
-  function showTombstone() {
-    if (tombstoneShown) return;
-    tombstoneShown = true;
-    const el = document.createElement('div');
-    el.id = 'bs-tombstone';
-    el.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:2rem;text-align:center;background:rgba(20,20,22,.92);color:#f5f5f7;font-family:system-ui,sans-serif';
-    el.innerHTML = '<div style="max-width:480px"><h2 style="margin:0 0 .5rem;font-weight:600">Companion paused</h2><p style="margin:0;opacity:.85">Ask your coding agent to bring it back. This page reconnects automatically.</p></div>';
-    if (document.body) document.body.appendChild(el);
-  }
-
   function connect() {
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
     setStatus(everConnected ? 'reconnecting' : 'connecting');
     ws = new WebSocket(websocketUrl());
     ws.onopen = () => {
-      const recovered = tombstoneShown;
       everConnected = true;
       disconnectedSince = null;
       reconnectDelay = MIN_RECONNECT_MS;
-      tombstoneShown = false;
+      disconnectedNoticeShown = false;
       setStatus('connected');
       eventQueue.forEach((event) => ws.send(JSON.stringify(event)));
       eventQueue = [];
-      if (recovered) reloadAfterRecovery();
     };
     ws.onmessage = (message) => {
       let data;
@@ -100,9 +86,12 @@
     ws.onclose = () => {
       ws = null;
       if (disconnectedSince === null) disconnectedSince = Date.now();
-      if (Date.now() - disconnectedSince >= TOMBSTONE_AFTER_MS) {
+      if (Date.now() - disconnectedSince >= DISCONNECTED_NOTICE_AFTER_MS) {
         setStatus('disconnected');
-        showTombstone();
+        if (!disconnectedNoticeShown) {
+          disconnectedNoticeShown = true;
+          toast('视觉伴侣已断开，页面仍可查看；正在自动重连');
+        }
       } else setStatus('reconnecting');
       reconnectTimer = setTimeout(connect, reconnectDelay);
       reconnectDelay = nextReconnectDelay(reconnectDelay, MAX_RECONNECT_MS);
@@ -295,18 +284,35 @@
     return value >= 1000 ? (value / 1000).toFixed(value >= 10000 ? 0 : 1) + 'k' : String(value);
   }
 
+  function clearPluginContent() {
+    if (!toolContent) return;
+    if (toolContent._ttStatsTimer) clearInterval(toolContent._ttStatsTimer);
+    toolContent._ttStatsTimer = null;
+    toolContent.innerHTML = '';
+  }
+
   async function renderStatsPlugin(container) {
-    const response = await fetch('/api/session-stats');
-    const stats = await response.json();
-    container.innerHTML = `<div class="tt-view-head"><strong>会话统计</strong></div>
-      <div class="tt-stat-grid">
-        <div><b>≈ ${compactNumber(stats.estimatedTotalTokens)}</b><span>视觉会话 Token 估算</span></div>
-        <div><b>${stats.screenCount}</b><span>页面</span></div>
-        <div><b>${stats.analyticsEvents}</b><span>埋点事件</span></div>
-        <div><b>${compactNumber(stats.reportedTotalTokens)}</b><span>已上报官方用量</span></div>
-        <div><b>${stats.analyticsReporting ? '已开启' : '仅本地'}</b><span>埋点模式</span></div>
-      </div>
-      <p class="tt-hint">估算仅覆盖页面 HTML 与浏览器交互，不等同于 Codex 账单；若宿主能取得官方 usage，可调用 brainstorm.tokenUsage(...) 写入精确值。</p>`;
+    async function refresh() {
+      if (container !== toolContent || toolPanel.hidden) return;
+      const response = await fetch('/api/session-stats', { cache: 'no-store' });
+      const stats = await response.json();
+      const rows = (stats.turns || []).slice(-12).reverse().map((turn) => `<div class="tt-turn-row">
+        <span><b>第 ${turn.index} 轮</b><small>${String(turn.label || turn.id).replace(/[&<>]/g, '')}</small></span>
+        <span><b>${turn.source === 'official' ? '' : '≈ '}${compactNumber(turn.totalTokens)}</b><small>${turn.source === 'official' ? '官方 usage' : '页面与交互估算'}</small></span>
+      </div>`).join('');
+      container.innerHTML = `<div class="tt-view-head"><strong>逐轮 Token</strong><span class="tt-live-dot">实时</span></div>
+        <div class="tt-stat-grid">
+          <div><b>≈ ${compactNumber(stats.estimatedTotalTokens)}</b><span>视觉会话估算</span></div>
+          <div><b>${compactNumber(stats.reportedTotalTokens)}</b><span>官方 usage</span></div>
+          <div><b>${stats.turns ? stats.turns.length : 0}</b><span>视觉轮次</span></div>
+          <div><b>${stats.analyticsReporting ? '已开启' : '仅本地'}</b><span>埋点模式</span></div>
+        </div>
+        <div class="tt-turn-list">${rows || '<p class="tt-hint">当前还没有可统计的视觉轮次。</p>'}</div>
+        <p class="tt-hint">每 2 秒刷新。每个语义页面自动形成一个视觉轮次；宿主上报 turnId/turnIndex 后显示官方 usage，否则明确标记为估算，不等同于 Codex 账单。</p>`;
+      if (popperInstance) popperInstance.update();
+    }
+    await refresh();
+    container._ttStatsTimer = setInterval(() => refresh().catch(() => {}), STATS_REFRESH_MS);
   }
 
   function injectToolStyles() {
@@ -317,18 +323,18 @@
       #tt-floating-tools *{box-sizing:border-box}#tt-floating-tools button{font:inherit}
       #tt-tool-ball{pointer-events:auto;width:48px;height:48px;border:1px solid rgba(255,255,255,.3);border-radius:50%;background:#17171a;color:white;box-shadow:0 8px 28px rgba(0,0,0,.28);cursor:grab;display:grid;place-items:center;font-weight:750;letter-spacing:-.06em;user-select:none;touch-action:none}
       #tt-tool-ball:hover{transform:translateY(-1px)}#tt-tool-ball:focus-visible{outline:3px solid #6d8cff;outline-offset:3px}
-      #tt-tool-panel{pointer-events:auto;position:absolute;right:0;bottom:58px;width:min(340px,calc(100vw - 28px));max-height:min(560px,calc(100vh - 100px));overflow:auto;background:rgba(255,255,255,.96);backdrop-filter:blur(18px);border:1px solid rgba(0,0,0,.12);border-radius:18px;box-shadow:0 18px 54px rgba(0,0,0,.24);padding:12px;transform-origin:bottom right;transition:.16s ease}
-      #tt-floating-tools[data-side="left"] #tt-tool-panel{left:0;right:auto;transform-origin:bottom left}
-      #tt-tool-panel[hidden]{display:block;opacity:0;visibility:hidden;transform:scale(.94) translateY(8px);pointer-events:none}
+      #tt-tool-panel{pointer-events:auto;position:fixed;width:min(360px,calc(100vw - 20px));max-height:min(620px,calc(100vh - 20px));overflow:auto;background:rgba(255,255,255,.96);backdrop-filter:blur(18px);border:1px solid rgba(0,0,0,.12);border-radius:18px;box-shadow:0 18px 54px rgba(0,0,0,.24);padding:12px;transition:opacity .16s ease,visibility .16s ease}
+      #tt-tool-panel[data-popper-placement^="top"]{transform-origin:bottom center}#tt-tool-panel[data-popper-placement^="bottom"]{transform-origin:top center}#tt-tool-panel[data-popper-placement^="left"]{transform-origin:right center}#tt-tool-panel[data-popper-placement^="right"]{transform-origin:left center}
+      #tt-tool-panel[hidden]{display:block;opacity:0;visibility:hidden;pointer-events:none}
       .tt-panel-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 10px}.tt-panel-head strong{font-size:14px}.tt-panel-head button{border:0;background:transparent;cursor:pointer;font-size:18px;color:#666}
       .tt-plugin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.tt-plugin{min-width:0;border:1px solid #e2e2e6;background:#f7f7f9;border-radius:11px;padding:9px 4px;cursor:pointer;color:#242428}.tt-plugin:hover{background:#eeeef2;border-color:#c9c9d0}.tt-plugin i{display:block;font-style:normal;font-size:17px;margin-bottom:3px}.tt-plugin span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
       #tt-tool-content{border-top:1px solid #e5e5e8;margin-top:11px;padding-top:11px}.tt-view-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.tt-view-head button{border:1px solid #d4d4d8;background:white;border-radius:8px;padding:5px 8px;cursor:pointer}
       .tt-swatches{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}.tt-swatch{border:1px solid #e2e2e6;background:white;border-radius:9px;padding:6px;display:grid;grid-template-columns:22px 1fr auto;gap:6px;align-items:center;text-align:left;cursor:pointer}.tt-swatch i{width:22px;height:22px;border-radius:6px;background:var(--swatch);border:1px solid rgba(0,0,0,.12)}.tt-swatch small{color:#999}
       .tt-page-list{display:grid;gap:5px}.tt-page-item{border:1px solid #e2e2e6;background:white;border-radius:9px;padding:7px;display:grid;grid-template-columns:24px 1fr;align-items:center;text-align:left;cursor:pointer}.tt-page-item span{width:22px;height:22px;display:grid;place-items:center;border-radius:6px;background:#eeeef2;color:#666}.tt-page-item b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tt-page-item.active{border-color:#5577ef;background:#f2f5ff}
-      .tt-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.tt-stat-grid div{background:#f5f5f7;border-radius:10px;padding:10px}.tt-stat-grid b,.tt-stat-grid span{display:block}.tt-stat-grid b{font-size:18px}.tt-stat-grid span{font-size:11px;color:#6f6f76;margin-top:3px}.tt-hint{font-size:11px;color:#777;margin:9px 2px 0}
+      .tt-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.tt-stat-grid div{background:#f5f5f7;border-radius:10px;padding:10px}.tt-stat-grid b,.tt-stat-grid span{display:block}.tt-stat-grid b{font-size:18px}.tt-stat-grid span{font-size:11px;color:#6f6f76;margin-top:3px}.tt-hint{font-size:11px;color:#777;margin:9px 2px 0}.tt-live-dot{font-size:10px;color:#12875d;display:flex;align-items:center;gap:4px}.tt-live-dot:before{content:'';width:6px;height:6px;border-radius:50%;background:#20b77b;box-shadow:0 0 0 3px rgba(32,183,123,.12)}.tt-turn-list{display:grid;gap:6px;margin-top:10px}.tt-turn-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid #e5e5e9;border-radius:10px;padding:8px 9px}.tt-turn-row>span{min-width:0}.tt-turn-row>span:last-child{text-align:right}.tt-turn-row b,.tt-turn-row small{display:block}.tt-turn-row b{font-size:12px}.tt-turn-row small{font-size:10px;color:#7a7a82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
       .tt-site-result{display:grid;gap:9px}.tt-site-result p{margin:0;color:#5f6678}.tt-site-result code{display:block;overflow:auto;background:#f2f3f7;border-radius:8px;padding:8px;font-size:10px}.tt-site-result a{display:block;text-align:center;text-decoration:none;background:#5368f5;color:#fff;border-radius:9px;padding:8px;font-weight:650}
       #tt-tool-toast{position:fixed;left:50%;bottom:24px;z-index:2147483647;transform:translate(-50%,12px);opacity:0;background:#18181b;color:#fff;border-radius:999px;padding:9px 14px;font:13px system-ui;pointer-events:none;transition:.16s}#tt-tool-toast.show{opacity:1;transform:translate(-50%,0)}
-      @media(prefers-color-scheme:dark){#tt-tool-panel{background:rgba(28,28,31,.96);color:#f5f5f7;border-color:#46464d}.tt-plugin,.tt-swatch,.tt-page-item,.tt-view-head button{background:#35353a;color:#f5f5f7;border-color:#4b4b52}.tt-plugin:hover{background:#414148}.tt-stat-grid div{background:#35353a}.tt-hint,.tt-stat-grid span{color:#aaa}.tt-page-item.active{background:#26335a;border-color:#6d8cff}#tt-tool-content{border-color:#46464d}}
+      @media(prefers-color-scheme:dark){#tt-tool-panel{background:rgba(28,28,31,.96);color:#f5f5f7;border-color:#46464d}.tt-plugin,.tt-swatch,.tt-page-item,.tt-view-head button{background:#35353a;color:#f5f5f7;border-color:#4b4b52}.tt-plugin:hover{background:#414148}.tt-stat-grid div{background:#35353a}.tt-hint,.tt-stat-grid span,.tt-turn-row small{color:#aaa}.tt-turn-row{border-color:#46464d}.tt-page-item.active{background:#26335a;border-color:#6d8cff}#tt-tool-content{border-color:#46464d}}
     `;
     document.head.appendChild(style);
   }
@@ -349,10 +355,11 @@
       button.append(icon, label);
       button.addEventListener('click', async () => {
         sendEvent({ type: 'plugin_open', plugin: plugin.id, status: 'ok' });
-        toolContent.innerHTML = '';
+        clearPluginContent();
         try {
           if (plugin.render) await plugin.render(toolContent, window.brainstorm);
           else if (plugin.run) await plugin.run(window.brainstorm);
+          if (popperInstance) popperInstance.update();
         } catch (error) {
           sendEvent({ type: 'plugin_error', plugin: plugin.id, error: error.message, status: 'error' });
           toast(error.message || '工具执行失败');
@@ -372,7 +379,40 @@
   }
 
   function collapseTools() {
-    if (toolPanel) toolPanel.hidden = true;
+    if (!toolPanel) return;
+    clearPluginContent();
+    toolPanel.hidden = true;
+    if (popperInstance) popperInstance.setOptions((options) => ({
+      ...options,
+      modifiers: options.modifiers.map((modifier) => modifier.name === 'eventListeners' ? { ...modifier, enabled: false } : modifier),
+    }));
+  }
+
+  function popperOptions() {
+    return {
+      placement: toolRoot && toolRoot.dataset.side === 'left' ? 'top-start' : 'top-end',
+      strategy: 'fixed',
+      modifiers: [
+        { name: 'eventListeners', enabled: true },
+        { name: 'offset', options: { offset: [0, 10] } },
+        { name: 'flip', options: { fallbackPlacements: ['top', 'bottom', 'left', 'right'] } },
+        { name: 'preventOverflow', options: { boundary: 'viewport', padding: 10, altAxis: true } },
+      ],
+    };
+  }
+
+  function openTools() {
+    if (!toolPanel || !toolBall) return;
+    toolPanel.hidden = false;
+    if (!popperInstance) {
+      if (!window.Popper || !window.Popper.createPopper) {
+        toolPanel.hidden = true;
+        toast('Popper 定位组件未加载');
+        return;
+      }
+      popperInstance = window.Popper.createPopper(toolBall, toolPanel, popperOptions());
+    } else popperInstance.setOptions(popperOptions());
+    requestAnimationFrame(() => popperInstance && popperInstance.update());
   }
 
   function makeDraggable(ball) {
@@ -388,6 +428,7 @@
       if (Math.abs(dx) + Math.abs(dy) > 5) start.moved = true;
       toolRoot.style.right = Math.max(8, Math.min(window.innerWidth - 56, start.right - dx)) + 'px';
       toolRoot.style.bottom = Math.max(8, Math.min(window.innerHeight - 56, start.bottom - dy)) + 'px';
+      if (popperInstance && !toolPanel.hidden) popperInstance.forceUpdate();
     });
     ball.addEventListener('pointerup', (event) => {
       if (!start) return;
@@ -399,7 +440,11 @@
       toolRoot.dataset.side = dockLeft ? 'left' : 'right';
       toolRoot.style.right = (dockLeft ? window.innerWidth - rect.right : 10) + 'px';
       try { localStorage.setItem('tt-floating-tools-position', JSON.stringify({ right: toolRoot.style.right, bottom: toolRoot.style.bottom, side: toolRoot.dataset.side })); } catch (e) {}
-      if (!moved) toolPanel.hidden = !toolPanel.hidden;
+      if (popperInstance && !toolPanel.hidden) popperInstance.setOptions(popperOptions());
+      if (!moved) {
+        if (toolPanel.hidden) openTools();
+        else collapseTools();
+      }
     });
   }
 
@@ -414,6 +459,7 @@
     toolContent = toolRoot.querySelector('#tt-tool-content');
     toolRoot.querySelector('.tt-panel-head button').addEventListener('click', collapseTools);
     const ball = toolRoot.querySelector('#tt-tool-ball');
+    toolBall = ball;
     try {
       const saved = JSON.parse(localStorage.getItem('tt-floating-tools-position'));
       if (saved && saved.right && saved.bottom) {
@@ -423,6 +469,12 @@
       }
     } catch (e) {}
     makeDraggable(ball);
+    if (typeof ResizeObserver !== 'undefined') {
+      panelResizeObserver = new ResizeObserver(() => {
+        if (popperInstance && !toolPanel.hidden) popperInstance.update();
+      });
+      panelResizeObserver.observe(toolPanel);
+    }
     document.addEventListener('pointerdown', (event) => {
       if (!toolPanel.hidden && !toolRoot.contains(event.target)) collapseTools();
     });
@@ -454,11 +506,15 @@
     choice: (value, metadata = {}) => sendEvent({ type: 'choice', value, ...metadata }),
     tokenUsage: (usage = {}) => sendEvent({ type: 'token_usage', ...usage }),
     plugins: { register: registerPlugin, list: () => [...plugins.keys()] },
-    tools: { open: () => { toolPanel.hidden = false; }, close: collapseTools },
+    tools: { open: openTools, close: collapseTools },
   };
 
   buildFloatingTools();
   sendEvent({ type: 'page_view', plugin: 'core', status: 'ok' });
   window.dispatchEvent(new CustomEvent('tech-tower:ready', { detail: window.brainstorm }));
+  window.addEventListener('beforeunload', () => {
+    if (panelResizeObserver) panelResizeObserver.disconnect();
+    if (popperInstance) popperInstance.destroy();
+  });
   connect();
 })();

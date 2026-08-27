@@ -21,6 +21,9 @@ for (let index = 0; index < args.length; index += 1) {
   else if (arg === '--cached-input') options.cachedInput = args[++index];
   else if (arg === '--model') options.model = args[++index];
   else if (arg === '--source') options.source = args[++index];
+  else if (arg === '--turn-id') options.turnId = args[++index];
+  else if (arg === '--turn-index') options.turnIndex = args[++index];
+  else if (arg === '--label') options.label = args[++index];
   else fail(`未知参数: ${arg}`);
 }
 
@@ -43,6 +46,9 @@ const row = {
   outputTokens: tokenCount(options.output, '--output'),
   cachedInputTokens: tokenCount(options.cachedInput, '--cached-input'),
 };
+if (options.turnId !== undefined) row.turnId = String(options.turnId).slice(0, 160);
+if (options.turnIndex !== undefined) row.turnIndex = tokenCount(options.turnIndex, '--turn-index');
+if (options.label !== undefined) row.label = String(options.label).slice(0, 160);
 
 const output = path.join(stateDir, 'token-usage.jsonl');
 fs.appendFileSync(output, JSON.stringify(row) + '\n', { mode: 0o600 });

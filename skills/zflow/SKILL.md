@@ -3,10 +3,10 @@ name: zflow
 description: 技术塔六步工程执行流水线（intake→brainstorm→plan→build→review→pr）。当用户明确要走技术塔流程，或需要把需求落实为代码、测试、审查与交付的完整工程闭环时使用。内置 brainstorm 视觉决策、git 建仓引导、测试用例集成和运行时回归。只想完成 UI/UX 设计、页面原型或视觉比稿而不实现代码时，不使用本 skill，改用 zflow-vision。
 metadata:
   short-description: 技术塔六步流水线：视觉伴侣+建仓引导+测试集成
-  version: 1.18.0
+  version: 1.19.0
 ---
 
-# 技术塔工作流 v1.18.0
+# 技术塔工作流 v1.19.0
 
 六步流水线：intake → brainstorm → plan → build → review → pr。
 拓扑定义：`workflow/zflow.yaml`；端到端示例：`demo.md`。
@@ -65,6 +65,7 @@ visual-companion/smoke-test.sh   # 一键冒烟，无需人工交互
 
 ## 版本历史
 
+- **v1.19.0**（2026-08-27）：视觉伴侣悬浮工具弹窗改用离线捆绑的 `@popperjs/core`，支持边缘自动翻转和视口防溢出；移除断连时遮挡设计页的全屏暂停层，改为非阻塞状态提示和自动重连；Token 插件每两秒刷新逐轮统计，每个语义页面自动形成视觉轮次，并可用 `turnId` / `turnIndex` 关联宿主上报的官方 usage。
 - **v1.18.0**（2026-08-27）：视觉伴侣新增插件化「导出所有」，将会话内全部设计页面、设计决策文档和聚合埋点摘要打包为可移植的 Express 静态评审站；产物自带离线运行时与 `serve.cjs`，支持独立启动和页面/决策切换。新增可复用的 `export-design-site.cjs` 脚本，Markdown 由 `marked` 渲染并经 `xss` 清洗。
 - **v1.17.0**（2026-08-27）：视觉伴侣新增默认收起、可拖动靠边的插件化悬浮球；内置逐页 PNG/独立 HTML 导出、参考色/像素取色、视觉会话 Token 估算与官方 usage 记录接口；分析事件持久化为 JSONL，并支持显式配置隐私过滤的远端上报。PNG 与 Token 能力分别基于离线捆绑的 `html-to-image`、`gpt-tokenizer`，减少重复脚本和读图带来的 token 消耗。
 - **v1.15.0**（2026-08-26）：中文名称保持不变，英文 skill 标识迁移为 `zflow` / `zflow-vision`；首次安装统一使用 `npx @kaitow/zflow`，移除安装提示词 skill，并增加旧名称目录迁移清理与隔离首装校验。

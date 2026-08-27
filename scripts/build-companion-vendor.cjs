@@ -13,6 +13,18 @@ fs.mkdirSync(outDir, { recursive: true });
 
 Promise.all([
   esbuild.build({
+    entryPoints: [require.resolve('@popperjs/core')],
+    outfile: path.join(outDir, 'popper.js'),
+    bundle: true,
+    format: 'iife',
+    globalName: 'Popper',
+    minify: true,
+    platform: 'browser',
+    target: ['chrome100', 'edge100', 'firefox100', 'safari15.4'],
+    legalComments: 'none',
+    metafile: true,
+  }),
+  esbuild.build({
     entryPoints: [require.resolve('html-to-image')],
     outfile: path.join(outDir, 'html-to-image.js'),
     bundle: true,

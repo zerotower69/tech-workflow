@@ -1,6 +1,6 @@
 {
   "name": "@kaitow/zflow",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "description": "技术塔 skills：六步工程交付流水线，以及可独立完成 UI/UX 比稿、原型与设计交付的浏览器视觉伴侣。支持 Codex 与 Claude Code。",
   "type": "module",
   "bin": {
@@ -22,6 +22,7 @@
     "version": "node scripts/sync-version.js && git add skills/zflow/SKILL.md skills/zflow-vision/SKILL.md README.md plugin-src/plugin.json .claude-plugin/marketplace.json install.sh install.ps1"
   },
   "devDependencies": {
+    "@popperjs/core": "2.11.8",
     "esbuild": "0.28.2",
     "express": "5.2.1",
     "gpt-tokenizer": "4.0.0",

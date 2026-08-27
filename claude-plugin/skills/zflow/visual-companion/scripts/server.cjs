@@ -294,7 +294,7 @@ function renderScreen(screenFile, { interactive = true } = {}) {
     : waitingPage();
   if (!interactive) return html;
   const injection = screenClientContext(screenFile) +
-    '\n<script src="/assets/html-to-image.js"></script>\n' + helperInjection;
+    '\n<script src="/assets/popper.js"></script>\n<script src="/assets/html-to-image.js"></script>\n' + helperInjection;
   if (html.includes('</body>')) return html.replace('</body>', injection + '\n</body>');
   return html + injection;
 }
@@ -501,25 +501,94 @@ function recordTokenUsage(event) {
     outputTokens: finiteNonNegative(event.outputTokens),
     cachedInputTokens: finiteNonNegative(event.cachedInputTokens),
   };
+  if (event.turnId !== undefined) row.turnId = String(event.turnId).slice(0, 160);
+  if (event.turnIndex !== undefined) row.turnIndex = finiteNonNegative(event.turnIndex);
+  if (event.label !== undefined) row.label = String(event.label).slice(0, 160);
   fs.appendFileSync(TOKEN_USAGE_FILE, JSON.stringify(row) + '\n', { mode: 0o600 });
   recordAnalytics({ type: 'token_usage_recorded', status: 'ok' }, 'server');
   return row;
 }
 
-function sessionStats() {
-  const screens = listScreens();
-  const screenTokens = screens.reduce((sum, screen) => {
-    try { return sum + countTokens(fs.readFileSync(screen.path, 'utf-8')); }
-    catch (e) { return sum; }
-  }, 0);
-  const analytics = readJsonLines(ANALYTICS_FILE);
-  const interactionTokens = analytics.reduce((sum, event) => sum + finiteNonNegative(event.estimatedTokens), 0);
-  const usage = readJsonLines(TOKEN_USAGE_FILE);
-  const reported = usage.reduce((totals, row) => ({
+function tokenTotals(rows) {
+  return rows.reduce((totals, row) => ({
     inputTokens: totals.inputTokens + finiteNonNegative(row.inputTokens),
     outputTokens: totals.outputTokens + finiteNonNegative(row.outputTokens),
     cachedInputTokens: totals.cachedInputTokens + finiteNonNegative(row.cachedInputTokens),
   }), { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0 });
+}
+
+function summarizeTurns(screenDetails, analytics, usage) {
+  const turns = screenDetails.map((screen, offset) => {
+    const index = offset + 1;
+    const interactions = analytics.filter((event) => event.screen === screen.name);
+    const interactionTokens = interactions.reduce((sum, event) => sum + finiteNonNegative(event.estimatedTokens), 0);
+    return {
+      id: `screen:${screen.name}`,
+      index,
+      label: screen.name.replace(/\.html$/i, ''),
+      screen: screen.name,
+      estimate: true,
+      estimatedTokens: finiteNonNegative(screen.tokens) + interactionTokens,
+      reported: { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0 },
+      reportedTotalTokens: 0,
+      totalTokens: finiteNonNegative(screen.tokens) + interactionTokens,
+      source: 'estimate',
+      updatedAt: screen.updatedAt || null,
+    };
+  });
+  const extra = new Map();
+  for (const row of usage) {
+    let turn = null;
+    if (row.turnId !== undefined) turn = turns.find((item) => item.id === row.turnId || item.screen === row.turnId);
+    if (!turn && Number.isInteger(Number(row.turnIndex)) && Number(row.turnIndex) > 0) {
+      turn = turns[Number(row.turnIndex) - 1] || null;
+    }
+    if (!turn) {
+      const key = row.turnId ? String(row.turnId) : 'reported:unassigned';
+      if (!extra.has(key)) {
+        extra.set(key, {
+          id: key,
+          index: turns.length + extra.size + 1,
+          label: row.label ? String(row.label) : (row.turnId ? String(row.turnId) : '未关联轮次'),
+          screen: null,
+          estimate: false,
+          estimatedTokens: 0,
+          reported: { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0 },
+          reportedTotalTokens: 0,
+          totalTokens: 0,
+          source: 'official',
+          updatedAt: row.occurredAt || null,
+        });
+      }
+      turn = extra.get(key);
+    }
+    const totals = tokenTotals([row]);
+    turn.reported.inputTokens += totals.inputTokens;
+    turn.reported.outputTokens += totals.outputTokens;
+    turn.reported.cachedInputTokens += totals.cachedInputTokens;
+    turn.reportedTotalTokens = turn.reported.inputTokens + turn.reported.outputTokens;
+    turn.totalTokens = turn.reportedTotalTokens;
+    turn.source = 'official';
+    turn.estimate = false;
+    if (row.label) turn.label = String(row.label).slice(0, 160);
+    if (row.occurredAt && (!turn.updatedAt || row.occurredAt > turn.updatedAt)) turn.updatedAt = row.occurredAt;
+  }
+  return turns.concat([...extra.values()]);
+}
+
+function sessionStats() {
+  const screens = listScreens();
+  const screenDetails = screens.map((screen) => {
+    let tokens = 0;
+    try { tokens = countTokens(fs.readFileSync(screen.path, 'utf-8')); } catch (e) {}
+    return { name: screen.name, tokens, updatedAt: new Date(screen.mtime).toISOString() };
+  });
+  const screenTokens = screenDetails.reduce((sum, screen) => sum + screen.tokens, 0);
+  const analytics = readJsonLines(ANALYTICS_FILE);
+  const interactionTokens = analytics.reduce((sum, event) => sum + finiteNonNegative(event.estimatedTokens), 0);
+  const usage = readJsonLines(TOKEN_USAGE_FILE);
+  const reported = tokenTotals(usage);
+  const turns = summarizeTurns(screenDetails, analytics, usage);
   return {
     scope: 'visual-companion-session',
     estimate: true,
@@ -531,6 +600,9 @@ function sessionStats() {
     reportedTotalTokens: reported.inputTokens + reported.outputTokens,
     analyticsEvents: analytics.length,
     analyticsReporting: Boolean(ANALYTICS_ENDPOINT),
+    turns,
+    currentTurn: turns.length ? turns[turns.length - 1] : null,
+    refreshedAt: new Date().toISOString(),
   };
 }
 
@@ -574,6 +646,15 @@ function handleRequest(req, res) {
     jsonResponse(res, sessionStats());
   } else if (req.method === 'POST' && pathname === '/api/export-site') {
     exportDesignSite(res);
+  } else if (req.method === 'GET' && pathname === '/assets/popper.js') {
+    const vendorPath = path.join(__dirname, 'vendor', 'popper.js');
+    if (!fs.existsSync(vendorPath)) {
+      res.writeHead(404, securityHeaders());
+      res.end('Not found');
+      return;
+    }
+    res.writeHead(200, securityHeaders({ 'Content-Type': 'application/javascript; charset=utf-8' }));
+    res.end(fs.readFileSync(vendorPath));
   } else if (req.method === 'GET' && pathname === '/assets/html-to-image.js') {
     const vendorPath = path.join(__dirname, 'vendor', 'html-to-image.js');
     if (!fs.existsSync(vendorPath)) {
@@ -958,6 +1039,7 @@ module.exports = {
   browserLauncherForPlatform,
   compactAnalyticsEvent,
   exportHtml,
+  summarizeTurns,
   sessionStats,
   OPCODES,
   MAX_FRAME_PAYLOAD_BYTES
