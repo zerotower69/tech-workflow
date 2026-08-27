@@ -69,7 +69,7 @@ test('TC-003/005: Codex fresh install removes only exact legacy skills', t => {
     fs.mkdirSync(path.join(base, name), { recursive: true });
     fs.writeFileSync(path.join(base, name, 'SKILL.md'), `---\nname: ${name}\n---\n`);
   }
-  const result = run(['--tool', 'codex'], f.project, f.home);
+  const result = run(['--yes', '--tool', 'codex'], f.project, f.home);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(skillNames(base), ['unrelated-skill', 'zflow', 'zflow-vision']);
   assert.equal(fs.existsSync(path.join(base, 'tech-workflow')), false);
@@ -79,7 +79,7 @@ test('TC-003/005: Codex fresh install removes only exact legacy skills', t => {
 test('TC-004: Claude fresh install contains only product skills', t => {
   const f = fixture();
   t.after(() => fs.rmSync(f.base, { recursive: true, force: true }));
-  const result = run(['--tool', 'claude'], f.project, f.home);
+  const result = run(['--yes', '--tool', 'claude'], f.project, f.home);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(skillNames(path.join(f.project, '.claude', 'skills')), ['zflow', 'zflow-vision']);
 });
@@ -92,7 +92,18 @@ test('TC-006: uninstall removes new and legacy names but preserves unrelated ski
     fs.mkdirSync(path.join(base, name), { recursive: true });
     fs.writeFileSync(path.join(base, name, 'SKILL.md'), `---\nname: ${name}\n---\n`);
   }
-  const result = run(['--tool', 'codex', '--uninstall'], f.project, f.home);
+  const result = run(['--yes', '--tool', 'codex', '--uninstall'], f.project, f.home);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(skillNames(base), ['unrelated-skill']);
+});
+
+test('TC-010: 非交互环境未加 --yes 时拒绝安装且不写文件', t => {
+  const f = fixture();
+  t.after(() => fs.rmSync(f.base, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(f.project, '.codex'), { recursive: true });
+  const result = run(['--tool', 'codex'], f.project, f.home);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /非交互环境不会自动安装/);
+  assert.match(result.stderr, /--yes/);
+  assert.deepEqual(skillNames(path.join(f.project, '.codex', 'skills')), []);
 });

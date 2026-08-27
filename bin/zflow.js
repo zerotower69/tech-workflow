@@ -12,6 +12,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, lstatSy
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { homedir } from 'os';
+import { createInterface } from 'node:readline/promises';
+import { stdin, stdout } from 'node:process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -124,12 +126,13 @@ function usage() {
   zflow v${PKG.version} — 技术塔 skills 安装器
 
   用法：
-    npx @kaitow/zflow                    项目级：自动检测 Codex / Claude Code 并装到当前项目
+    npx @kaitow/zflow                    项目级：自动检测目标，显示计划并询问确认
     npx @kaitow/zflow --global           全局：装到用户级目录，所有项目共享
     npx @kaitow/zflow --tool claude      指定目标安装（检测不到时使用）
     npx @kaitow/zflow --global -t codex  全局 + 指定目标
     npx @kaitow/zflow --uninstall        卸载项目级（加 --global 卸载全局）
     npx @kaitow/zflow --force            允许在用户主目录(~)做项目级安装（默认拒绝）
+    npx @kaitow/zflow --yes              跳过确认（仅用于已明确授权的自动化）
     npx @kaitow/zflow --help             显示帮助
     npx @kaitow/zflow --version          显示版本
 
@@ -141,6 +144,7 @@ ${scanSkills().map(s => `    - ${s.name}`).join('\n')}
     claude  → 项目 .claude/skills/ | 全局 ${join(HOME, '.claude', 'skills')}/
 
   说明：
+    安装和卸载默认要求命令行确认；非交互环境必须显式加 --yes。
     安装为镜像覆盖：先移除目标旧目录再整体复制，无旧版本残留。
     项目级优先、全局兜底，二者可共存。
     可迁移沙箱 CLI：zflow-sandbox --help（或直接运行 skill 内 scripts/sandbox/cli.cjs）。
@@ -184,8 +188,8 @@ function uninstallOne(target, isGlobal, skills) {
 // ---------- 参数解析 ----------
 
 const args = process.argv.slice(2);
-const flags = { help: false, version: false, global: false, uninstall: false, force: false, tool: null };
-const KNOWN_FLAGS = new Set(['--help', '-h', '--version', '-v', '--global', '-g', '--uninstall', '-u', '--force', '-f', '--tool', '-t']);
+const flags = { help: false, version: false, global: false, uninstall: false, force: false, yes: false, tool: null };
+const KNOWN_FLAGS = new Set(['--help', '-h', '--version', '-v', '--global', '-g', '--uninstall', '-u', '--force', '-f', '--yes', '-y', '--tool', '-t']);
 
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
@@ -199,6 +203,7 @@ for (let i = 0; i < args.length; i++) {
   else if (a === '--global' || a === '-g') flags.global = true;
   else if (a === '--uninstall' || a === '-u') flags.uninstall = true;
   else if (a === '--force' || a === '-f') flags.force = true;
+  else if (a === '--yes' || a === '-y') flags.yes = true;
   else if (a === '--tool' || a === '-t') {
     flags.tool = args[++i];
     if (!flags.tool) {
@@ -235,9 +240,38 @@ if (targets.length === 0) {
   process.exit(1);
 }
 
+function targetBase(target) {
+  return flags.global ? target.globalBase : resolve(PROJECT_DIR, target.projectBase);
+}
+
+async function confirmAction(action) {
+  if (flags.yes) return true;
+  if (!stdin.isTTY || !stdout.isTTY) {
+    console.error(`❌ 非交互环境不会自动${action}。确认已获授权后请显式加 --yes。`);
+    process.exit(2);
+  }
+
+  console.log(`\n  即将${action}技术塔 skills v${PKG.version}`);
+  console.log(`  范围：${flags.global ? '全局' : '项目级'}`);
+  console.log(`  目标：${targets.map(target => target.name).join(' + ')}`);
+  for (const target of targets) console.log(`  目录：${targetBase(target)}`);
+
+  const rl = createInterface({ input: stdin, output: stdout });
+  try {
+    const answer = (await rl.question(`\n  确认${action}？[y/N] `)).trim().toLowerCase();
+    return answer === 'y' || answer === 'yes' || answer === '是';
+  } finally {
+    rl.close();
+  }
+}
+
 // ---------- 卸载 ----------
 
 if (flags.uninstall) {
+  if (!await confirmAction('卸载')) {
+    console.log('\n  已取消，未修改任何文件。\n');
+    process.exit(0);
+  }
   console.log(`\n  技术塔 skills — 卸载（${flags.global ? '全局' : '项目级'}，${skills.length} 个 skill）\n`);
   for (const t of targets) uninstallOne(t, flags.global, skills);
   console.log('');
@@ -256,6 +290,11 @@ if (!flags.global && realCwd === realHome && !flags.force) {
   console.error('   想让所有项目可用，请用全局安装: npx @kaitow/zflow --global');
   console.error('   如确实要装在当前目录，请加 --force。');
   process.exit(1);
+}
+
+if (!await confirmAction('安装')) {
+  console.log('\n  已取消，未修改任何文件。\n');
+  process.exit(0);
 }
 
 console.log(`\n  技术塔 skills v${PKG.version} — 安装（${flags.global ? '全局' : '项目级'}，${targets.map(t => t.name).join(' + ')}，${skills.length} 个 skill）\n`);

@@ -50,8 +50,8 @@ try {
 
   const executable = path.join(consumer, 'node_modules', '.bin', process.platform === 'win32' ? 'zflow.cmd' : 'zflow');
   const env = { ...process.env, HOME: home, CODEX_HOME: path.join(home, '.codex') };
-  run(executable, ['--tool', 'codex'], consumer, env);
-  run(executable, ['--tool', 'claude'], consumer, env);
+  run(executable, ['--yes', '--tool', 'codex'], consumer, env);
+  run(executable, ['--yes', '--tool', 'claude'], consumer, env);
 
   for (const agentDir of ['.codex', '.claude']) {
     const skillsBase = path.join(consumer, agentDir, 'skills');

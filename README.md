@@ -84,10 +84,11 @@ flowchart LR
 ### npm 一键安装（推荐，需 Node ≥ 18）
 
 ```bash
-npx @kaitow/zflow                    # 项目级：自动检测 Codex / Claude Code 并装到当前项目
+npx @kaitow/zflow                    # 项目级：自动检测目标，显示安装计划并询问确认
 npx @kaitow/zflow --global           # 全局：装到用户级目录，所有项目共享
 npx @kaitow/zflow --tool claude      # 检测不到时显式指定目标（codex / claude）
 npx @kaitow/zflow --uninstall        # 卸载（加 --global 卸载全局安装）
+npx @kaitow/zflow --yes --tool codex # 已明确授权的自动化：跳过交互确认
 ```
 
 安装由本地 Node.js 脚本直接完成，不需要把 Markdown 发给 AI，也不消耗用于理解安装步骤的对话 token。视觉伴侣的内置导出也避免了每次临时生成脚本或重复读图。
@@ -97,7 +98,7 @@ npx @kaitow/zflow --uninstall        # 卸载（加 --global 卸载全局安装�
 | Codex | `.codex/skills/<skill-name>/` | `$CODEX_HOME/skills/<skill-name>/`（默认 `~/.codex`） |
 | Claude Code | `.claude/skills/<skill-name>/` | `~/.claude/skills/<skill-name>/` |
 
-安装为镜像覆盖（先清旧目录再整体复制，无旧版本残留）；`skills/` 下每个 skill 独立安装、互不影响。升级时会精确清理旧英文名目录，避免新旧 skill 并存。项目级安装拒绝在 `~` 下执行（防污染全局，`--force` 可解除）。
+安装器在写入前会显示安装范围、目标工具与实际目录，并要求输入 `y` 确认；直接回车会取消。非交互环境默认拒绝写入，只有显式传入 `--yes` 才执行。确认后采用镜像覆盖（先清旧目录再整体复制，无旧版本残留）；`skills/` 下每个 skill 独立安装、互不影响。升级时会精确清理旧英文名目录，避免新旧 skill 并存。项目级安装拒绝在 `~` 下执行（防污染全局，`--force` 可解除）。
 
 ### 手动备用安装（无需 Node）
 

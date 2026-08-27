@@ -35,7 +35,7 @@ metadata:
 ## 更新检查（每天首次启动）
 
 - skill 触发时先跑 `scripts/check-update.cjs`（当天已查自动跳过；失败静默放行，不阻塞原请求）。
-- `updateAvailable=true` 时一句话告知本地版本/远端最新 tag，问是否更新：同意后直接执行 `npx @kaitow/zflow --global` 更新已安装 skills，再继续原请求；拒绝则直接继续原请求。项目级安装则在项目根执行 `npx @kaitow/zflow`。
+- `updateAvailable=true` 时一句话告知本地版本/远端最新 tag，问是否更新：用户同意后才执行 `npx @kaitow/zflow --yes --global` 更新已安装 skills，再继续原请求；拒绝则直接继续原请求。项目级更新同样在用户明确同意后于项目根执行 `npx @kaitow/zflow --yes`。
 
 ## 各步骤要点与手册
 
